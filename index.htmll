@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>大老爺遊戲</title>
+  <title>MT遊戲</title>
   <meta name="description" content="全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -93,11 +93,11 @@
 </head>
 <body>
   <div class="container">
-    <h1>歡迎來到大老爺遊戲</h1>
+    <h1>歡迎來到MT遊戲</h1>
     <p>全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！</p>
-    <a class="button" href="https://ag223.ofa99.net" target="_blank">立即體驗遊戲</a>
+    <a class="button" href="https://ag223.ofa99.net" target="_blank">立即了解詳情</a>
     <div class="links">
-      <a href="https://ag223.ofa99.net/problem/company?id=privacy" target="_blank">遊戲條款介紹</a>
+      <a href="https://ag223.ofa99.net/problem/company?id=privacy" target="_blank">條款介紹</a>
       <a href="https://lin.ee/aeibuDt" class="line" target="_blank">專屬LINE專員</a>
     </div>
   </div>
