@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>大老爺遊戲</title>
-  <meta name="description" content="全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Meta Pixel Code -->
   <script>
@@ -28,70 +28,77 @@
   <style>
     body {
       margin: 0;
-      font-family: 'Microsoft JhengHei', sans-serif;
-      background-color: #fdf6e3; /* 淺金色底 */
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #000;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .container {
-      max-width: 480px;
-      margin: 40px auto;
-      padding: 30px;
-      background-color: #000; /* 中間框黑色底 */
-      border-radius: 12px;
+      background-color: #111;
+      padding: 40px 20px;
+      margin: 60px 20px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 100%;
       text-align: center;
-      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+      border: 2px solid #d4af37;
     }
 
     h1 {
-      font-size: 26px;
-      color: #FFD700; /* 金色 */
-      margin-bottom: 15px;
+      color: #ffd700; /* 金色 */
+      margin-bottom: 20px;
+      font-size: 28px;
     }
 
     p {
+      color: #fff;
       font-size: 16px;
-      color: #ffffff; /* 白色文字 */
       line-height: 1.6;
+      margin-bottom: 30px;
     }
 
-    .btn {
+    .button {
       display: inline-block;
-      margin: 20px 0;
-      padding: 12px 24px;
-      font-size: 16px;
-      background-color: #f5d76e; /* 淺金色 */
-      color: #000;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      background-color: #f7c873; /* 淺金色 */
+      color: black;
+      padding: 12px 28px;
+      border-radius: 5px;
       text-decoration: none;
       font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 25px;
+    }
+
+    .links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
     }
 
     .links a {
-      display: inline-block;
-      margin: 10px;
-      font-size: 14px;
+      color: #f7c873; /* 淺金色 */
       text-decoration: none;
+      font-size: 14px;
     }
 
-    .links .terms {
-      color: #f5d76e; /* 遊戲條款字 淺金色 */
-    }
-
-    .links .line {
-      color: #06C755; /* Line 綠色 */
+    .links a.line {
+      color: #00c300; /* Line 綠 */
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>歡迎來到大老爺遊戲</h1>
-    <p>（全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！）</p>
-    <a class="btn" href="https://ag223.ofa99.net" target="_blank">立即體驗遊戲</a>
+    <p>全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！</p>
+    <a class="button" href="https://ag223.ofa99.net" target="_blank">立即體驗遊戲</a>
     <div class="links">
-      <a class="terms" href="https://ag223.ofa99.net/problem/company?id=privacy" target="_blank">遊戲條款介紹</a>
-      <a class="line" href="https://lin.ee/aeibuDt" target="_blank">聯絡我們</a>
+      <a href="https://ag223.ofa99.net/problem/company?id=privacy" target="_blank">遊戲條款介紹</a>
+      <a href="https://lin.ee/aeibuDt" class="line" target="_blank">專屬LINE專員</a>
     </div>
   </div>
 </body>
