@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>正在跳轉中...</title>
-  <meta http-equiv="refresh" content="2;url=https://ag223.ofa99.net">
-  
+  <meta charset="UTF-8" />
+  <title>大老爺遊戲</title>
+  <meta name="description" content="全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <!-- Meta Pixel Code -->
   <script>
     !function(f,b,e,v,n,t,s)
@@ -20,11 +21,78 @@
   </script>
   <noscript>
     <img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=616535358170880&ev=PageView&noscript=1"/>
+      src="https://www.facebook.com/tr?id=616535358170880&ev=PageView&noscript=1"/>
   </noscript>
   <!-- End Meta Pixel Code -->
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background-color: #fdf6e3; /* 淺金色底 */
+    }
+
+    .container {
+      max-width: 480px;
+      margin: 40px auto;
+      padding: 30px;
+      background-color: #000; /* 中間框黑色底 */
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 26px;
+      color: #FFD700; /* 金色 */
+      margin-bottom: 15px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #ffffff; /* 白色文字 */
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #f5d76e; /* 淺金色 */
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .links a {
+      display: inline-block;
+      margin: 10px;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .links .terms {
+      color: #f5d76e; /* 遊戲條款字 淺金色 */
+    }
+
+    .links .line {
+      color: #06C755; /* Line 綠色 */
+    }
+  </style>
 </head>
 <body>
-  <p>請稍候，正在跳轉...</p>
+  <div class="container">
+    <h1>歡迎來到大老爺遊戲</h1>
+    <p>（全方位互動平台，眾多遊戲、直播陪玩等多元選擇，讓您享受最佳遊戲體驗！）</p>
+    <a class="btn" href="https://ag223.ofa99.net" target="_blank">立即體驗遊戲</a>
+    <div class="links">
+      <a class="terms" href="https://ag223.ofa99.net/problem/company?id=privacy" target="_blank">遊戲條款介紹</a>
+      <a class="line" href="https://lin.ee/aeibuDt" target="_blank">聯絡我們</a>
+    </div>
+  </div>
 </body>
 </html>
