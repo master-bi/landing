@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>離線恐龍風格小遊戲</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body{height:100%;margin:0;background:#0f0f10;color:#e6e6e6;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+            display:grid;place-items:center}
+  .wrap{display:flex;flex-direction:column;gap:6px;align-items:center}
+  h1{font-size:16px;margin:0;color:#cfcfcf;font-weight:600}
+  canvas{background:#111;border:2px solid #2a2a2d;border-radius:10px;touch-action:none}
+  .hint{font-size:12px;color:#9aa0a6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>恐龍跳躍（Space/↑ 跳，↓ 俯身，手機點擊/長按）</h1>
+  <canvas id="game" width="800" height="260"></canvas>
+  <div class="hint">得分會自動記錄最高分；遊戲結束按空白鍵/點擊重新開始</div>
+</div>
+
+<script>
+const cvs = document.getElementById("game");
+const ctx = cvs.getContext("2d");
+
+// ====== 遊戲常數 ======
+const GROUND_Y = 200;
+const GRAVITY = 0.7;
+const JUMP_VY = -12;
+const SPEED_START = 6;
+const SPEED_INC = 0.0009; // 隨時間加速
+const CACTUS_CHANCE = 0.015; // 每 frame 生成機率
+const BIRD_CHANCE_BASE = 0.002; // 隨分數略增
+const MAX_BIRD_LEVELS = [150, 300, 600]; // 不同高度
+const CLOUD_CHANCE = 0.01;
+
+// ====== 狀態 ======
+let speed = SPEED_START;
+let score = 0;
+let hi = Number(localStorage.getItem("trex_hi") || 0);
+let gameOver = false;
+let started = false;
+
+// 玩家（恐龍）
+const dino = {
+  x: 50,
+  y: GROUND_Y - 44,
+  w: 40,
+  h: 44,
+  vy: 0,
+  duck: false,
+  onGround: true
+};
+
+// 障礙物
+const obstacles = []; // {type:'cactus'|'bird', x, y, w, h, vy?}
+const clouds = [];    // 背景雲
+
+// ====== 輔助 ======
+const rand = (a,b)=> a + Math.random()*(b-a);
+
+// ====== 生成 ======
+function spawnCactus() {
+  // 多種大小
+  const sizes = [
+    {w:18,h:36}, {w:22,h:44}, {w:26,h:50}, {w:40,h:44}
+  ];
+  const s = sizes[Math.floor(Math.random()*sizes.length)];
+  obstacles.push({ type:"cactus", x:cvs.width+20, y:GROUND_Y-s.h, w:s.w, h:s.h });
+}
+function spawnBird() {
+  const level = MAX_BIRD_LEVELS[Math.floor(Math.random()*MAX_BIRD_LEVELS.length)];
+  const y = GROUND_Y - level/4; // 讓高度合理（level 只是參考值）
+  obstacles.push({ type:"bird", x:cvs.width+20, y:y, w:46, h:26, flap:0 });
+}
+function spawnCloud() {
+  clouds.push({ x:cvs.width+10, y:rand(30,110), w:rand(40,80), h:rand(10,22), s:rand(0.4,0.8) });
+}
+
+// ====== 邏輯 ======
+function reset() {
+  speed = SPEED_START;
+  score = 0;
+  gameOver = false;
+  started = true;
+  obstacles.length = 0;
+  clouds.length = 0;
+  dino.y = GROUND_Y - dino.h;
+  dino.vy = 0;
+  dino.duck = false;
+  dino.onGround = true;
+}
+
+function jump() {
+  if (!started) reset();
+  if (dino.onGround && !gameOver) {
+    dino.vy = JUMP_VY;
+    dino.onGround = false;
+  }
+}
+function setDuck(v) {
+  if (gameOver) return;
+  dino.duck = v;
+  // 俯身時身形更扁
+  if (v) {
+    dino.h = 28;
+    dino.y = Math.min(dino.y + 16, GROUND_Y - dino.h);
+  } else {
+    // 恢復
+    const oldBottom = dino.y + dino.h;
+    dino.h = 44;
+    dino.y = Math.min(oldBottom - dino.h, GROUND_Y - dino.h);
+  }
+}
+
+// ====== 碰撞判定（簡矩形）======
+function collide(a,b){
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+// ====== 畫圖 ======
+function drawGround() {
+  ctx.strokeStyle="#2c2f33";
+  ctx.lineWidth = 2;
+  // 跑道
+  ctx.beginPath();
+  ctx.moveTo(0,GROUND_Y+0.5);
+  ctx.lineTo(cvs.width,GROUND_Y+0.5);
+  ctx.stroke();
+  // 滾動的小線條
+  ctx.strokeStyle="#26292d";
+  for(let x= (-(score*speed)%40); x<cvs.width; x+=40){
+    ctx.beginPath();
+    ctx.moveTo(x,GROUND_Y+2.5);
+    ctx.lineTo(x+20,GROUND_Y+2.5);
+    ctx.stroke();
+  }
+}
+
+function drawDino() {
+  ctx.save();
+  ctx.translate(dino.x, dino.y);
+  // 身體
+  ctx.fillStyle="#e6e6e6";
+  if (dino.duck) {
+    // 俯身樣式（長條）
+    ctx.fillRect(0, 6, dino.w, dino.h-6);
+    // 頭
+    ctx.fillRect(dino.w-12, 0, 12, 12);
+  } else {
+    ctx.fillRect(0, 0, dino.w, dino.h);
+    // 腿（簡單動畫）
+    const t = Math.floor(score/4)%8;
+    ctx.clearRect(6, dino.h-6, 12, 6 * ((t%2)?1:0));
+    ctx.clearRect(dino.w-18, dino.h-6, 12, 6 * ((t%2)?0:1));
+  }
+  // 眼睛
+  ctx.fillStyle="#111";
+  ctx.fillRect(dino.w-10, 8, 4, 4);
+  ctx.restore();
+}
+
+function drawCactus(o){
+  ctx.save();
+  ctx.translate(o.x,o.y);
+  ctx.fillStyle="#5dd05d";
+  // 簡化版仙人掌（主幹+左右分枝）
+  ctx.fillRect(o.w*0.4, o.h*0.2, o.w*0.2, o.h*0.8);
+  ctx.fillRect(o.w*0.15, o.h*0.45, o.w*0.15, o.h*0.2);
+  ctx.fillRect(o.w*0.7,  o.h*0.35, o.w*0.15, o.h*0.2);
+  ctx.restore();
+}
+
+function drawBird(o){
+  ctx.save();
+  ctx.translate(o.x,o.y);
+  const flap = Math.sin(o.flap)*6;
+  ctx.fillStyle="#b7c1ff";
+  // 身體
+  ctx.fillRect(0, 6, o.w*0.6, o.h*0.5);
+  // 翼
+  ctx.beginPath();
+  ctx.moveTo(10, 10);
+  ctx.lineTo(10+18, 10 + flap);
+  ctx.lineTo(10+36, 10);
+  ctx.fill();
+  // 頭
+  ctx.fillRect(o.w*0.6, 0, 10, 10);
+  ctx.fillStyle="#111";
+  ctx.fillRect(o.w*0.6+6, 2, 2, 2);
+  ctx.restore();
+}
+
+function drawCloud(c){
+  ctx.save();
+  ctx.translate(c.x,c.y);
+  ctx.fillStyle="#2b2f36";
+  ctx.beginPath();
+  ctx.roundRect(0,0,c.w,c.h,6);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawScore() {
+  ctx.fillStyle="#cfcfcf";
+  ctx.font="14px ui-sans-serif,system-ui";
+  ctx.textAlign="right";
+  ctx.fillText(String(Math.floor(score)).padStart(5,"0"), cvs.width-10, 20);
+  ctx.fillStyle="#8d9399";
+  ctx.fillText("HI " + String(Math.floor(hi)).padStart(5,"0"), cvs.width-90, 20);
+}
+
+function drawGameOver() {
+  ctx.fillStyle="rgba(0,0,0,.55)";
+  ctx.fillRect(0,0,cvs.width,cvs.height);
+  ctx.fillStyle="#ffb4a9";
+  ctx.font="20px ui-sans-serif,system-ui";
+  ctx.textAlign="center";
+  ctx.fillText("GAME OVER", cvs.width/2, cvs.height/2 - 6);
+  ctx.fillStyle="#cfcfcf";
+  ctx.font="14px ui-sans-serif,system-ui";
+  ctx.fillText("按空白鍵/點擊重新開始", cvs.width/2, cvs.height/2 + 18);
+}
+
+// ====== 主迴圈 ======
+let last = 0;
+function loop(ts=0){
+  const dt = (ts - last) / 16.67; // 基準 60fps
+  last = ts;
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+
+  // 背景雲
+  if (Math.random() < CLOUD_CHANCE) spawnCloud();
+  for (const c of clouds) c.x -= speed * c.s;
+  while (clouds.length && clouds[0].x + clouds[0].w < 0) clouds.shift();
+  clouds.forEach(drawCloud);
+
+  drawGround();
+
+  // 生成障礙
+  if (Math.random() < CACTUS_CHANCE * (1 + score/400)) spawnCactus();
+  if (Math.random() < (BIRD_CHANCE_BASE + score/10000)) spawnBird();
+
+  // 更新障礙
+  for (const o of obstacles) {
+    o.x -= speed;
+    if (o.type === "bird") o.flap += 0.3;
+  }
+  while (obstacles.length && obstacles[0].x + obstacles[0].w < 0) obstacles.shift();
+
+  // 物理
+  dino.vy += GRAVITY;
+  dino.y += dino.vy;
+  if (dino.y >= GROUND_Y - dino.h) {
+    dino.y = GROUND_Y - dino.h;
+    dino.vy = 0;
+    dino.onGround = true;
+  }
+
+  // 繪製
+  drawDino();
+  for (const o of obstacles) {
+    if (o.type === "cactus") drawCactus(o);
+    else drawBird(o);
+
+    // 碰撞
+    if (!gameOver) {
+      const boxD = {x:dino.x, y:dino.y, w:dino.w, h:dino.h};
+      const boxO = {x:o.x,    y:o.y,    w:o.w,    h:o.h};
+      if (collide(boxD, boxO)) gameOver = true;
+    }
+  }
+
+  // 分數、速度
+  if (!gameOver && started) {
+    score += 0.5;
+    speed += SPEED_INC;
+    if (score > hi) {
+      hi = score;
+      localStorage.setItem("trex_hi", String(Math.floor(hi)));
+    }
+  }
+
+  drawScore();
+  if (gameOver) drawGameOver();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ====== 控制 ======
+const keys = {};
+document.addEventListener("keydown", e=>{
+  keys[e.key] = true;
+  if ((e.key===" "||e.key==="ArrowUp") && !gameOver) jump();
+  if (e.key==="ArrowDown") setDuck(true);
+  if ((e.key===" "||e.key==="Enter") && gameOver) reset();
+});
+document.addEventListener("keyup", e=>{
+  keys[e.key] = false;
+  if (e.key==="ArrowDown") setDuck(false);
+});
+
+// 觸控（點擊跳、長按俯身）
+let touchTimer = null;
+cvs.addEventListener("pointerdown", e=>{
+  if (gameOver){ reset(); return; }
+  jump();
+  clearTimeout(touchTimer);
+  touchTimer = setTimeout(()=> setDuck(true), 220); // 長按
+});
+cvs.addEventListener("pointerup", ()=>{
+  clearTimeout(touchTimer);
+  setDuck(false);
+});
+
+</script>
+</body>
+</html>
