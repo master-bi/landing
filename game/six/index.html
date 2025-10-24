@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>電子百家樂 | Demo</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a2e; --accent:#38bdf8; --ok:#22c55e; --warn:#f59e0b; --lose:#ef4444;
+    --chip:#0ea5e9; --text:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 1200px at 70% -10%,#1e2a4a 0%,#0b1020 55%) fixed;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:1100px;margin:auto;padding:20px}
+  h1{margin:6px 0 16px;font-size:22px;color:#fff;letter-spacing:1px}
+  .table{
+    display:grid;grid-template-columns: 1.1fr .8fr 1.1fr;
+    gap:18px;align-items:start;
+  }
+  .panel{background:var(--panel);border:1px solid #223256;border-radius:16px;box-shadow:0 10px 35px #0004;padding:16px}
+  .bank{display:flex;align-items:center;gap:10px}
+  .avatar{width:44px;height:44px;border-radius:50%;background:
+    radial-gradient(circle at 30% 30%,#fff3,#0000 55%),linear-gradient(135deg,#ff99cc,#8b5cf6)}
+    .avatar.dealer{background:linear-gradient(135deg,#f472b6,#fb7185)}
+    .avatar.player{background:linear-gradient(135deg,#60a5fa,#34d399)}
+  .money{margin-left:auto;font-weight:700}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .chip{cursor:pointer;border:none;color:#fff;font-weight:700;border-radius:999px;padding:10px 14px;background:linear-gradient(180deg,var(--chip),#0284c7);box-shadow:0 6px 0 #075985}
+  .chip:active{transform:translateY(2px);box-shadow:0 4px 0 #075985}
+  .bet-area{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+  .bet{
+    min-height:90px;border-radius:14px;border:1px dashed #39507c;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;cursor:pointer;
+    background:linear-gradient(180deg,#0f1830,#0d1426);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .bet:hover{transform:translateY(-2px);box-shadow:0 10px 20px #0005}
+  .bet small{opacity:.85}
+  .bet .amt{font-weight:800}
+  .bet.tie{background:linear-gradient(180deg,#1d243f,#1a2238);border-color:#586a9b;color:#fcd34d}
+  .bet.player{border-color:#22c55e;color:#86efac}
+  .bet.banker{border-color:#f43f5e;color:#fecaca}
+  .cards{
+    display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px
+  }
+  .hand{background:#0f162a;border:1px solid #283756;border-radius:12px;padding:10px}
+  .title{font-weight:800;letter-spacing:.5px;margin-bottom:6px}
+  .card-row{display:flex;gap:8px;min-height:94px}
+  .card{
+    width:62px;height:88px;border-radius:10px;background:#fff;display:grid;place-items:center;
+    box-shadow:0 10px 18px #0006;border:1px solid #e5e7eb;transform:translateY(-6px);opacity:0;animation:drop .28s forwards;
+  }
+  @keyframes drop{to{transform:translateY(0);opacity:1}}
+  .pip{font-size:26px;font-weight:800}
+  .red{color:#ef4444}.black{color:#111827}
+  .score{font-weight:900;font-size:18px;margin-top:6px}
+  .controls{display:flex;gap:10px;margin-top:10px}
+  .btn{cursor:pointer;border:none;border-radius:10px;padding:10px 14px;font-weight:800;background:linear-gradient(180deg,#22d3ee,#06b6d4);color:#052231;box-shadow:0 8px 0 #0e7490}
+  .btn:disabled{opacity:.6;cursor:not-allowed;box-shadow:none}
+  .btn.secondary{background:#18253f;color:#cbd5e1;border:1px solid #374b73;box-shadow:none}
+  .log{max-height:240px;overflow:auto;font-family:ui-monospace,monospace;font-size:13px;line-height:1.35}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#0e1729;border:1px solid #2a3c5f}
+  .hist{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .dot{width:14px;height:14px;border-radius:50%}
+  .dot.P{background:#22c55e}.dot.B{background:#ef4444}.dot.T{background:#f59e0b}
+  .result-banner{margin-top:10px;padding:10px;border-radius:12px;font-weight:900;text-align:center;display:none}
+  .result-banner.win{background:#062e1b;color:#86efac;border:1px solid #16a34a}
+  .result-banner.lose{background:#3b0a0f;color:#fecaca;border:1px solid #ef4444}
+  .result-banner.push{background:#35220a;color:#facc15;border:1px solid #f59e0b}
+  .muted{opacity:.7}
+  .footer{margin-top:14px;opacity:.8;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>電子百家樂</h1>
+
+  <!-- 上方：資金 & 籌碼 -->
+  <div class="panel">
+    <div class="bank">
+      <div class="avatar dealer" title="荷官"></div>
+      <div>荷官上桌，祝你好手氣！</div>
+      <div class="money">餘額：$<span id="balance">5000</span></div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="bet-area">
+      <button class="bet banker" id="bet-banker" data-side="banker">
+        <strong>押莊</strong><small>賠率 1:0.95（5% 抽水）</small>
+        <div class="amt" id="amt-banker">$0</div>
+      </button>
+      <button class="bet tie" id="bet-tie" data-side="tie">
+        <strong>押和</strong><small>賠率 1:8</small>
+        <div class="amt" id="amt-tie">$0</div>
+      </button>
+      <button class="bet player" id="bet-player" data-side="player">
+        <strong>押閒</strong><small>賠率 1:1</small>
+        <div class="amt" id="amt-player">$0</div>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="dealBtn">發 牌</button>
+      <button class="btn secondary" id="clearBtn">清除下注</button>
+      <button class="btn secondary" id="rebetBtn">重複下注</button>
+    </div>
+  </div>
+
+  <!-- 中段：牌局 -->
+  <div class="table">
+    <div class="panel hand" id="player-area">
+      <div class="title">閒家 <span class="muted">Player</span></div>
+      <div class="card-row" id="player-cards"></div>
+      <div class="score">點數：<span id="player-score">0</span></div>
+    </div>
+
+    <div class="panel">
+      <div class="title">結果 / 歷史</div>
+      <div class="result-banner" id="banner"></div>
+      <div class="hist" id="history"></div>
+      <div class="log" id="log" style="margin-top:10px"></div>
+    </div>
+
+    <div class="panel hand" id="banker-area">
+      <div class="title">莊家 <span class="muted">Banker</span></div>
+      <div class="card-row" id="banker-cards"></div>
+      <div class="score">點數：<span id="banker-score">0</span></div>
+    </div>
+  </div>
+
+  <div class="footer">* 規則：採標準百家樂補牌規則。莊贏抽 5% 佣金；和局 1:8；押莊/閒遇和局退回本金。</div>
+</div>
+
+<script>
+/* ========= 資料與公用 ========= */
+const SUITS = ['♠','♥','♣','♦'];
+const PIP_COLOR = s => (s==='♥'||s==='♦') ? 'red' : 'black';
+const CHIP_SET = [10,25,50,100,200,500,1000];
+
+let balance = 5000;
+let lastBets = {banker:0, player:0, tie:0};
+const bets     = {banker:0, player:0, tie:0};
+let deck = [];
+let history = []; // 'B' / 'P' / 'T'
+
+const $ = s => document.querySelector(s);
+const el = {
+  balance: $('#balance'),
+  playerCards: $('#player-cards'),
+  bankerCards: $('#banker-cards'),
+  pScore: $('#player-score'),
+  bScore: $('#banker-score'),
+  amtB: $('#amt-banker'),
+  amtP: $('#amt-player'),
+  amtT: $('#amt-tie'),
+  log: $('#log'),
+  history: $('#history'),
+  banner: $('#banner'),
+  dealBtn: $('#dealBtn'),
+  clearBtn: $('#clearBtn'),
+  rebetBtn: $('#rebetBtn')
+};
+
+function refreshBets(){
+  el.amtB.textContent = '$'+bets.banker;
+  el.amtP.textContent = '$'+bets.player;
+  el.amtT.textContent = '$'+bets.tie;
+}
+function refreshBalance(){ el.balance.textContent = balance; }
+function log(s){ el.log.innerHTML = s + '<br>' + el.log.innerHTML; }
+
+/* ========= UI：籌碼/下注 ========= */
+const chipsWrap = document.getElementById('chips');
+let currentChip = CHIP_SET[2]; // default 50
+function renderChips(){
+  chipsWrap.innerHTML='';
+  CHIP_SET.forEach(v=>{
+    const b = document.createElement('button');
+    b.className='chip';
+    b.textContent = '$'+v;
+    if(v===currentChip) b.style.outline='3px solid #fff8';
+    b.onclick=()=>{ currentChip=v; renderChips(); };
+    chipsWrap.appendChild(b);
+  });
+}
+renderChips();
+
+['banker','player','tie'].forEach(side=>{
+  document.getElementById('bet-'+side).onclick = ()=>{
+    if(el.dealBtn.disabled) return;
+    if(balance < currentChip) return alert('餘額不足');
+    bets[side]+=currentChip;
+    balance-=currentChip;
+    refreshBets(); refreshBalance();
+  }
+});
+el.clearBtn.onclick = ()=>{
+  const refund = bets.banker + bets.player + bets.tie;
+  balance += refund;
+  bets.banker=bets.player=bets.tie=0;
+  refreshBets(); refreshBalance();
+};
+el.rebetBtn.onclick = ()=>{
+  const cost = lastBets.banker + lastBets.player + lastBets.tie;
+  if(cost===0) return;
+  if(balance < cost) return alert('餘額不足');
+  for(const k of ['banker','player','tie']) bets[k]+=lastBets[k];
+  balance -= cost;
+  refreshBets(); refreshBalance();
+};
+
+/* ========= 發牌 / 牌點 ========= */
+function newShoe(){
+  deck = [];
+  for(let d=0; d<6; d++){ // 6副牌
+    for(const s of SUITS){
+      for(let r=1; r<=13; r++){
+        deck.push({suit:s, rank:r});
+      }
+    }
+  }
+  // 洗牌
+  for(let i=deck.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [deck[i],deck[j]]=[deck[j],deck[i]];
+  }
+}
+newShoe();
+
+function draw(){ if(deck.length<15) newShoe(); return deck.pop(); }
+function baccaratValue(card){ const r=card.rank; return (r>=10)?0:(r===1?1:r); }
+function points(hand){ return hand.reduce((a,c)=>a+baccaratValue(c),0)%10; }
+
+/* ========= 補牌規則 ========= */
+function needPlayerThird(p){ return p<=5; }
+function needBankerThird(b, playerThird){
+  // 無第三張時
+  if(playerThird===null) return b<=5;
+  // 有第三張：依規則判斷
+  // player3 value
+  const pv = baccaratValue(playerThird);
+  if(b<=2) return true;
+  if(b===3) return pv!==8;
+  if(b===4) return pv>=2 && pv<=7;
+  if(b===5) return pv>=4 && pv<=7;
+  if(b===6) return pv===6 || pv===7;
+  return false; // b==7 stand; b>=8 natural
+}
+
+/* ========= 發牌流程 ========= */
+function clearTable(){
+  el.playerCards.innerHTML='';
+  el.bankerCards.innerHTML='';
+  el.pScore.textContent=0; el.bScore.textContent=0;
+  el.banner.style.display='none';
+}
+
+function makeCardEl(card, delayIndex){
+  const c = document.createElement('div');
+  c.className = 'card'; c.style.animationDelay = (delayIndex*0.12)+'s';
+  const face = document.createElement('div');
+  face.className = 'pip '+PIP_COLOR(card.suit);
+  const rankStr = (card.rank===1?'A':card.rank>10?['J','Q','K'][card.rank-11]:card.rank);
+  face.textContent = rankStr + card.suit;
+  c.appendChild(face);
+  return c;
+}
+
+async function dealRound(){
+  if(bets.banker+bets.player+bets.tie===0) return alert('請先下注');
+  el.dealBtn.disabled = true;
+  el.clearBtn.disabled = true; el.rebetBtn.disabled=true;
+  clearTable();
+  log('--- 開局 ---');
+
+  const P=[]; const B=[];
+  P.push(draw()); B.push(draw());
+  P.push(draw()); B.push(draw());
+
+  P.forEach((card,i)=> el.playerCards.appendChild(makeCardEl(card,i)));
+  B.forEach((card,i)=> el.bankerCards.appendChild(makeCardEl(card,i)));
+
+  await wait(450);
+  let p = points(P), b = points(B);
+  el.pScore.textContent=p; el.bScore.textContent=b;
+
+  // Natural
+  if(p>=8 || b>=8){
+    await finish(P,B,p,b);
+    return;
+  }
+
+  // 閒第三張？
+  let p3 = null;
+  if(needPlayerThird(p)){
+    p3 = draw(); P.push(p3);
+    el.playerCards.appendChild(makeCardEl(p3,2));
+    await wait(250); p = points(P); el.pScore.textContent=p;
+  }
+
+  // 莊第三張？
+  if(needBankerThird(b, p3)){
+    const b3 = draw(); B.push(b3);
+    el.bankerCards.appendChild(makeCardEl(b3,2));
+    await wait(250); b = points(B); el.bScore.textContent=b;
+  }
+
+  await finish(P,B,p,b);
+}
+
+function wait(ms){ return new Promise(res=>setTimeout(res,ms)); }
+
+/* ========= 結算 ========= */
+async function finish(P,B,p,b){
+  // 決勝
+  let winner='T';
+  if(p>b) winner='P'; else if(b>p) winner='B';
+
+  // 結算
+  let winAmt=0, bannerClass='push', bannerText='和局，押莊/閒退回本金';
+  if(winner==='P'){
+    // 閒 1:1
+    winAmt += bets.player*2;
+    bannerClass='win'; bannerText='閒家勝！';
+  }else if(winner==='B'){
+    // 莊 1:0.95（含退本金）
+    winAmt += Math.floor(bets.banker*1.95);
+    bannerClass='win'; bannerText='莊家勝！（含5% 抽水）';
+  }else{ // Tie
+    // tie 1:8；其他兩門退本
+    winAmt += Math.floor(bets.tie*9);
+  }
+
+  // 退回押莊/押閒在和局時本金
+  if(winner==='T'){
+    winAmt += bets.player + bets.banker;
+  }
+
+  const betSum = bets.banker+bets.player+bets.tie;
+  const net = winAmt - betSum;
+  balance += winAmt;
+  refreshBalance();
+
+  lastBets = {...bets}; // 存為可重注
+  bets.banker=bets.player=bets.tie=0; refreshBets();
+
+  // 歷史
+  history.unshift(winner);
+  renderHistory();
+
+  el.banner.textContent = `${bannerText}（本局損益：${net>=0?'+':''}${net}）`;
+  el.banner.className = 'result-banner ' + (winner==='T'?'push':(net>=0?'win':'lose'));
+  el.banner.style.display='block';
+
+  log(`結果：P=${p} / B=${b} -> ${winner==='P'?'閒勝':winner==='B'?'莊勝':'和局'}，損益 ${net>=0?'+':''}${net}`);
+
+  el.dealBtn.disabled = false;
+  el.clearBtn.disabled = false; el.rebetBtn.disabled=false;
+}
+
+function renderHistory(){
+  el.history.innerHTML='';
+  history.slice(0,24).forEach(h=>{
+    const d=document.createElement('div');d.className='dot '+(h==='P'?'P':(h==='B'?'B':'T'));el.history.appendChild(d);
+  });
+}
+
+/* ========= 綁定 ========= */
+el.dealBtn.onclick = dealRound;
+
+/* Boot */
+refreshBalance(); refreshBets(); renderHistory();
+</script>
+</body>
+</html>
