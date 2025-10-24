@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>電子百家樂（自動 20 秒一局）</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#151922;
+    --panel-2:#0d1016;
+    --text:#e6edf3;
+    --muted:#8b98a5;
+    --green:#34d399;
+    --red:#ef4444;
+    --blue:#60a5fa;
+    --gold:#f59e0b;
+    --chip:#1f2937;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial, "Noto Sans TC", "Microsoft JhengHei",sans-serif;
+    background: radial-gradient(60% 80% at 50% 20%, #121620 0%, #0b0e13 100%);
+    color:var(--text);
+  }
+  .layout{
+    display:grid;
+    grid-template-columns: 320px 1fr 360px;
+    grid-template-rows: auto 1fr auto;
+    height:100%;
+    gap:12px;
+    padding:12px;
+  }
+  .card{
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+    border:1px solid #1f2937;
+    border-radius:14px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+  }
+  .left, .right{padding:12px}
+  .topbar{
+    grid-column: 1 / -1;
+    display:flex;align-items:center;gap:16px;
+    padding:12px 16px;
+  }
+  .badge{
+    padding:6px 10px;
+    border-radius:999px;
+    font-weight:700;
+    background:#0b1220;border:1px solid #1f2937;color:#93c5fd
+  }
+  .timer{
+    margin-left:auto;
+    padding:6px 12px;border-radius:10px;
+    border:1px solid #1f2937;background:#0b1220;color:#fefefe;
+    font-weight:800;font-size:18px;letter-spacing:1px;
+  }
+  .center{
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    align-items:center;justify-content:center;
+  }
+
+  /* 中間動畫布景（無真人） */
+  .table-canvas{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(60% 50% at 50% 30%, rgba(42,66,110,.5) 0%, rgba(10,14,22,.0) 60%),
+      conic-gradient(from 210deg at 50% 140%, #142237, #0c1220, #0c1220, #142237);
+  }
+  .glow-ring{
+    position:absolute;inset:22% 18% 28% 18%;
+    border-radius:40px;
+    border:2px dashed #284a7a;
+    filter:drop-shadow(0 0 16px rgba(96,165,250,.3));
+    animation: spin 14s linear infinite;
+    opacity:.6;
+  }
+  @keyframes spin { to{ transform:rotate(360deg) } }
+
+  /* 下注區 */
+  .bet-pads{
+    position:relative;
+    z-index:2;
+    display:grid;
+    grid-template-columns: repeat(3, minmax(220px,1fr));
+    gap:12px;
+    width:min(100%, 1100px);
+  }
+  .bet{
+    padding:18px;border-radius:18px;
+    text-align:center;cursor:pointer;
+    border:2px solid transparent;
+    user-select:none;
+  }
+  .bet[data-type="player"]{ background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.35); }
+  .bet[data-type="banker"]{ background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.35);}
+  .bet[data-type="tie"]{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35);}
+  .bet:hover{filter:brightness(1.2)}
+  .bet-title{font-size:22px;font-weight:900;letter-spacing:4px}
+  .bet[data-type="player"] .bet-title{color:#93c5fd}
+  .bet[data-type="banker"] .bet-title{color:#fecaca}
+  .bet[data-type="tie"] .bet-title{color:#fcd34d}
+  .bet-odds{color:var(--muted);font-size:12px;margin-top:2px}
+  .bet-amt{margin-top:10px;font-weight:800}
+  .locked .bet{ opacity:.55; pointer-events:none; }
+
+  /* 籌碼 */
+  .chipbar{
+    grid-column: 1 / -1;
+    display:flex;flex-wrap:wrap;gap:10px;
+    padding:10px 12px;
+  }
+  .chip{
+    background:var(--chip);
+    border:1px solid #374151;color:#cbd5e1;
+    border-radius:999px;padding:10px 14px;font-weight:800;cursor:pointer;
+    display:flex;align-items:center;gap:8px;
+  }
+  .chip.disabled{opacity:.35;pointer-events:none}
+  .chip.active{outline:2px solid #93c5fd;color:#eaf2ff}
+
+  /* 路圖 / 歷史 */
+  .road{
+    display:grid;grid-template-columns: repeat(12, 1fr);
+    gap:6px;margin-top:8px;
+  }
+  .dot{
+    width:18px;height:18px;border-radius:999px;margin:auto;
+    border:2px solid transparent;
+  }
+  .dot.player{ background:#3b82f6; border-color:#93c5fd;}
+  .dot.banker{ background:#ef4444; border-color:#fecaca;}
+  .dot.tie{ background:#f59e0b; border-color:#fde68a;}
+
+  /* 右側資訊 */
+  .right .box{padding:10px 12px;border-radius:10px;background:#0b1220;border:1px solid #1f2937;margin-bottom:10px}
+  .title{font-weight:900;letter-spacing:2px;color:#9cc2ff}
+  .balance{font-size:24px;font-weight:900}
+
+  .msg{color:#fca5a5;font-size:13px;margin-top:6px;min-height:18px}
+  .good{color:#86efac}
+
+  /* 底部說明 */
+  .footer{
+    grid-column: 1 / -1;
+    padding:10px 14px;
+    display:flex;gap:12px;align-items:center;color:var(--muted);font-size:13px;
+  }
+</style>
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Top -->
+    <div class="topbar card">
+      <div class="badge">電子百家樂 • 自動 20 秒一局</div>
+      <div class="badge">下注 15 秒｜開牌 5 秒</div>
+      <div class="badge">限紅 100 – 10,000</div>
+      <div id="phase" class="badge">等待中</div>
+      <div id="timer" class="timer">20</div>
+    </div>
+
+    <!-- Left：路圖 -->
+    <div class="left card">
+      <div class="title">歷史路圖</div>
+      <div id="road" class="road"></div>
+    </div>
+
+    <!-- Center：桌面 + 下注 -->
+    <div id="center" class="center card">
+      <div class="table-canvas"></div>
+      <div class="glow-ring"></div>
+
+      <div id="pads" class="bet-pads">
+        <div class="bet" data-type="player">
+          <div class="bet-title">閒 (1:1)</div>
+          <div class="bet-odds">押中賠 1 倍</div>
+          <div class="bet-amt" id="amt-player">$0</div>
+        </div>
+        <div class="bet" data-type="tie">
+          <div class="bet-title">和 (8:1)</div>
+          <div class="bet-odds">押中賠 8 倍</div>
+          <div class="bet-amt" id="amt-tie">$0</div>
+        </div>
+        <div class="bet" data-type="banker">
+          <div class="bet-title">莊 (0.95)</div>
+          <div class="bet-odds">押中賠 0.95 倍</div>
+          <div class="bet-amt" id="amt-banker">$0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right：資金 / 籌碼 / 訊息 -->
+    <div class="right card">
+      <div class="box">
+        <div class="title">資金</div>
+        <div id="balance" class="balance">$100,000</div>
+      </div>
+      <div class="box">
+        <div class="title">籌碼</div>
+        <div id="chipbar" class="chipbar"></div>
+        <div id="msg" class="msg"></div>
+      </div>
+      <div class="box">
+        <div class="title">本局投注</div>
+        <div id="betsum">$0</div>
+      </div>
+    </div>
+
+    <!-- Bottom：提示 -->
+    <div class="footer card">
+      <div>莊贏賠 0.95，閒贏賠 1，和局賠 8；和局時莊/閒押注退回。</div>
+      <div class="good">本遊戲為前端模擬，用於展示版面與流程。</div>
+    </div>
+
+  </div>
+
+<script>
+(function(){
+  // ===== 參數 =====
+  const INITIAL_BAL = 100000;
+  const MIN_BET = 100;
+  const MAX_BET = 100000; // 依照你的限紅
+  const CHIPS = [100, 500, 1000, 5000, 10000, 50000]; // 5 萬會因限紅自動禁用
+  const ROUND = 20;       // 總時間
+  const BETTING = 15;     // 下注秒數
+  const REVEAL = 5;       // 開牌秒數
+  const COMM_BANKER = 0.95;
+  const PAY_PLAYER = 1.0;
+  const PAY_TIE = 8.0;
+
+  // 期望機率（不完全精確，但接近實務）
+  const P_BANKER = 0.4586;
+  const P_PLAYER = 0.4462;
+  const P_TIE    = 0.0952;
+
+  // ===== 狀態 =====
+  let balance = INITIAL_BAL;
+  let selectChip = CHIPS[0];
+  let phase = 'bet'; // 'bet' or 'reveal'
+  let sec = ROUND;
+  let timerId = null;
+  // 當局押注
+  const bets = { banker:0, player:0, tie:0 };
+  // 路圖（只記錄結果）
+  const history = []; // 'banker' | 'player' | 'tie'
+
+  // ===== DOM =====
+  const elTimer = document.getElementById('timer');
+  const elPhase = document.getElementById('phase');
+  const elBalance = document.getElementById('balance');
+  const elMsg = document.getElementById('msg');
+  const elBetSum = document.getElementById('betsum');
+  const elChipbar = document.getElementById('chipbar');
+  const elRoad = document.getElementById('road');
+  const center = document.getElementById('center');
+  const pads = document.getElementById('pads');
+
+  // ===== 工具 =====
+  const fmt = (n)=>'$'+n.toLocaleString();
+
+  function setMsg(text='', good=false){
+    elMsg.textContent = text;
+    elMsg.className = 'msg' + (good ? ' good':'');
+  }
+
+  function updateBalance(){ elBalance.textContent = fmt(balance); }
+  function updateBetLabels(){
+    document.getElementById('amt-banker').textContent = fmt(bets.banker);
+    document.getElementById('amt-player').textContent = fmt(bets.player);
+    document.getElementById('amt-tie').textContent    = fmt(bets.tie);
+    elBetSum.textContent = fmt(bets.banker + bets.player + bets.tie);
+  }
+
+  function clearBets(){
+    bets.banker = bets.player = bets.tie = 0;
+    updateBetLabels();
+  }
+
+  function buildChips(){
+    elChipbar.innerHTML = '';
+    CHIPS.forEach(v=>{
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = fmt(v);
+      chip.dataset.val = v;
+      elChipbar.appendChild(chip);
+    });
+    refreshChipStates();
+  }
+
+  function refreshChipStates(){
+    [...elChipbar.children].forEach(btn=>{
+      const val = Number(btn.dataset.val);
+      btn.classList.toggle('active', val === selectChip);
+      // 當前選的籌碼若超過限紅，下注階段就禁用
+      btn.classList.toggle('disabled', phase==='bet' && (val < MIN_BET || val > MAX_BET));
+    });
+  }
+
+  function setPhase(p){
+    phase = p;
+    if(p==='bet'){
+      elPhase.textContent = '下注中';
+      center.classList.remove('locked');
+    }else{
+      elPhase.textContent = '開牌中';
+      center.classList.add('locked');
+    }
+    refreshChipStates();
+  }
+
+  // ===== 下注點擊 =====
+  pads.addEventListener('click', e=>{
+    const pad = e.target.closest('.bet');
+    if(!pad || phase!=='bet') return;
+
+    const type = pad.dataset.type; // banker/player/tie
+    const val = selectChip;
+
+    if(val < MIN_BET || val > MAX_BET){
+      setMsg(`限紅 ${fmt(MIN_BET)} – ${fmt(MAX_BET)}，此籌碼不可下注`);
+      return;
+    }
+    if(balance < val){
+      setMsg('餘額不足');
+      return;
+    }
+    // 扣款 + 加注
+    balance -= val;
+    bets[type] += val;
+    setMsg('');
+    updateBalance();
+    updateBetLabels();
+  });
+
+  // 籌碼選擇
+  elChipbar.addEventListener('click', e=>{
+    const btn = e.target.closest('.chip');
+    if(!btn) return;
+    selectChip = Number(btn.dataset.val);
+    refreshChipStates();
+  });
+
+  // ===== 路圖渲染 =====
+  function renderRoad(){
+    elRoad.innerHTML = '';
+    const last = history.slice(-60); // 顯示最近 60 局
+    for(const r of last){
+      const dot = document.createElement('div');
+      dot.className = 'dot ' + (r==='banker'?'banker': r==='player'?'player':'tie');
+      elRoad.appendChild(dot);
+    }
+    // 填滿格子
+    const need = 12*5 - last.length; // 12列x5行（可改）
+    for(let i=0;i<need;i++){
+      const d = document.createElement('div');
+      elRoad.appendChild(d);
+    }
+  }
+
+  // ===== 結算 / 隨機結果 =====
+  function randomResult(){
+    const x = Math.random();
+    if(x < P_BANKER) return 'banker';
+    if(x < P_BANKER + P_PLAYER) return 'player';
+    return 'tie';
+  }
+
+  function settle(result){
+    // 退回／派彩
+    let gain = 0;
+    if(result === 'banker'){
+      gain += bets.banker + Math.floor(bets.banker * COMM_BANKER);
+      gain += bets.player ? 0 : 0;
+      // tie 不中
+    }else if(result === 'player'){
+      gain += bets.player + Math.floor(bets.player * PAY_PLAYER);
+    }else{ // tie
+      gain += bets.tie + Math.floor(bets.tie * PAY_TIE);
+      // 莊/閒退回
+      gain += bets.banker + bets.player;
+    }
+    balance += gain;
+    updateBalance();
+
+    // 記錄路圖並渲染
+    history.push(result);
+    renderRoad();
+
+    // 清空注
+    clearBets();
+    setMsg(`結果：${ result==='banker' ? '莊' : result==='player'?'閒':'和' }，本局結算 +${fmt(gain-0)}`, true);
+  }
+
+  // ===== 計時 / 自動回合 =====
+  function tick(){
+    sec--;
+    elTimer.textContent = sec;
+
+    if(sec === REVEAL && phase === 'bet'){
+      // 轉入開牌
+      setPhase('reveal');
+      // 小動畫（簡化）
+      setMsg('開牌中…');
+    }
+
+    if(sec <= 0){
+      // 回合結束 → 結算 → 新回合
+      // 若沒下注也會結算（可能 0 變化）
+      const result = randomResult();
+      settle(result);
+
+      // 下一回合
+      startRound();
+    }
+  }
+
+  function startRound(){
+    sec = ROUND;
+    setPhase('bet');
+    setMsg('請下注…');
+    elTimer.textContent = sec;
+    refreshChipStates();
+  }
+
+  function startLoop(){
+    if(timerId) clearInterval(timerId);
+    startRound();
+    timerId = setInterval(tick, 1000);
+  }
+
+  // ===== 初始化 =====
+  function init(){
+    updateBalance();
+    updateBetLabels();
+    buildChips();
+    renderRoad();
+    startLoop();
+  }
+  init();
+
+})();
+</script>
+</body>
+</html>
