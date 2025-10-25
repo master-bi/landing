@@ -3,64 +3,62 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>行動百家樂（完整路＋加注＋標準補牌）</title>
+<title>行動百家樂 v3（標準補牌＋完整路單）</title>
 <style>
   :root{
     --bg:#0f1320; --panel:#12182a; --panel2:#0b1223; --bar:#0d1220;
-    --text:#e9f3ff; --muted:#8aa1c5; --ok:#22c55e; --warn:#facc15;
+    --text:#e9f3ff; --muted:#8aa1c5; --ok:#22c55e; --warn:#facc15; --settle:#38bdf8;
+    /* 牌色規範：閒=藍、莊=紅、和=綠 */
     --player:#1fa2ff; --banker:#ff2257; --tie:#59d37a;
-    --eye:#ff6d6d; --eyeB:#5fb0ff;
+    --eyeR:#ff6d6d; --eyeB:#5fb0ff;
   }
   *{box-sizing:border-box}
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans TC","PingFang TC",sans-serif}
   body{margin:0;display:flex;justify-content:center}
   .phone{width:min(430px,100vw);height:100vh;display:flex;flex-direction:column;background:linear-gradient(180deg,#0f1525,#0a0f1b 55%,#0b1020)}
-  /* 影片區 */
+
+  /* ===== 牌桌（上半區，含倒數與結果） ===== */
   .video{position:relative;aspect-ratio:16/9;background:radial-gradient(60% 100% at 50% 0%, #202742 0%, #0d1222 65%);border-bottom:1px solid rgba(255,255,255,.06);overflow:hidden}
   .dealer{position:absolute;inset:0;background:
-    linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.25) 65%,rgba(0,0,0,.5)),
-    url('data:image/svg+xml;utf8,\
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">\
-<defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#222a4a" offset="0"/><stop stop-color="#151a32" offset="1"/></linearGradient></defs>\
-<rect width="1200" height="675" fill="url(#g)"/>\
-</svg>');
+    linear-gradient(180deg,rgba(0,0,0,.0),rgba(0,0,0,.25) 60%,rgba(0,0,0,.55)),
+    radial-gradient(80% 120% at 50% -20%,rgba(255,255,255,.08),transparent 60%);
     background-size:cover;background-position:center 30%}
   .countWrap{position:absolute;left:10px;top:10px;width:72px;height:72px;border-radius:50%;display:grid;place-items:center}
-  .countWrap .ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--ok) 0 360deg, #ffffff1f 0 360deg);-webkit-mask:radial-gradient(#0000 55%,#000 56%);mask:radial-gradient(#0000 55%,#000 56%);box-shadow:0 0 0 3px rgba(255,255,255,.12) inset,0 4px 16px rgba(0,0,0,.4)}
-  .countWrap .num{position:relative;font-weight:900;font-size:22px;color:#111}
-  .phase{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.45);padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.1)}
+  .ring{position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(#0000 56%,#000 57%);mask:radial-gradient(#0000 56%,#000 57%);box-shadow:0 0 0 3px rgba(255,255,255,.12) inset,0 4px 16px rgba(0,0,0,.4)}
+  .num{position:relative;font-weight:900;font-size:26px;color:#111;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+  .phase{position:absolute;right:10px;top:10px;background:rgba(0,0,0,.45);padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.12)}
   /* 結果大字 */
   .result-badge{position:absolute;left:50%;top:8px;transform:translateX(-50%);display:none;gap:10px;align-items:center;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);padding:4px 10px;border-radius:9px;font-weight:900;letter-spacing:1px}
   .rb-p{color:var(--player)} .rb-b{color:var(--banker)} .rb-t{color:var(--tie)}
   .rb-s{font-weight:900;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.08)}
-  /* 開牌層（牌縮小） */
+
+  /* ===== 開牌層（普通節奏：0.6s/張） ===== */
   .reveal{position:absolute;inset:0;display:none;pointer-events:none}
-  .cards{position:absolute;left:50%;top:62%;transform:translate(-50%,-50%);display:flex;gap:6px}
-  .card{width:58px;height:80px;border-radius:8px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.6);transform-style:preserve-3d;transform:rotateY(180deg);transition:transform .45s ease}
-  .card .face,.card .back{position:absolute;inset:0;border-radius:8px;backface-visibility:hidden;display:grid;place-items:center;font-size:22px;font-weight:800}
+  .cards{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);display:flex;gap:6px}
+  .card{width:54px;height:74px;border-radius:8px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.6);transform-style:preserve-3d;transform:rotateY(180deg);transition:transform .45s ease}
+  .card .face,.card .back{position:absolute;inset:0;border-radius:8px;backface-visibility:hidden;display:grid;place-items:center;font-size:20px;font-weight:800}
   .card .back{background:repeating-linear-gradient(45deg,#1c3a63 0 10px,#275389 10px 20px);transform:rotateY(180deg)}
   .card .face{color:#111}
   .card.flip{transform:rotateY(0)}
-  /* 狀態列 */
+
+  /* ===== 狀態列 ===== */
   .status{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bar);border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
   .money{margin-left:auto;font-weight:800}
-  /* 下注區 */
-  .bet-grid{background:var(--panel);padding:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .tile{position:relative;border-radius:10px;padding:10px 8px 12px;text-align:center;background:linear-gradient(180deg,#121a33,#0e1428);border:1px solid rgba(255,255,255,.08);box-shadow:0 6px 14px rgba(0,0,0,.25) inset;user-select:none;cursor:pointer}
-  .tile .name{font-size:18px;font-weight:800;letter-spacing:2px}
-  .tile .odd{margin-top:2px;font-size:12px;color:var(--muted)}
+
+  /* ===== 下注區（縮小一點，靠近截圖比例） ===== */
+  .bet-grid{background:var(--panel);padding:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .tile{position:relative;border-radius:10px;padding:8px 6px 10px;text-align:center;background:linear-gradient(180deg,#121a33,#0e1428);border:1px solid rgba(255,255,255,.08);box-shadow:0 6px 14px rgba(0,0,0,.25) inset;user-select:none;cursor:pointer}
+  .tile .name{font-size:16px;font-weight:800;letter-spacing:2px}
+  .tile .odd{margin-top:1px;font-size:11px;color:var(--muted)}
   .player{outline:2px solid rgba(31,162,255,.25)} .banker{outline:2px solid rgba(255,34,87,.25)} .tie{outline:2px solid rgba(89,211,122,.25)}
   .pair{outline:2px dashed rgba(255,255,255,.25)} .super6{outline:2px dashed rgba(250,204,21,.45)}
   .lock{pointer-events:none;opacity:.5;filter:grayscale(1)}
   .winshine{position:absolute;inset:0;border-radius:10px;box-shadow:0 0 0 2px #fff inset;animation:shine .8s ease-out both}
   @keyframes shine{from{box-shadow:0 0 0 2px rgba(255,255,255,.0) inset}to{box-shadow:0 0 0 3px rgba(255,255,255,.8) inset}}
-  /* 籌碼 */
-  .chips{padding:10px 8px;display:flex;gap:10px;justify-content:center;background:var(--panel2);border-bottom:1px solid rgba(255,255,255,.06)}
-  .chip{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:900;cursor:pointer;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.65) 60%, rgba(255,255,255,.3) 61%),conic-gradient(from 0turn,#fff0 0 22%,#fff 0 25%,#fff0 0 47%,#fff 0 50%,#fff0 0 72%,#fff 0 75%,#fff0 0);box-shadow:0 6px 14px rgba(0,0,0,.35);color:#101421;border:6px solid #2aa1ff}
-  .chip[data-v="500"]{border-color:#8c9eff}.chip[data-v="1000"]{border-color:#00e8ff}.chip[data-v="5000"]{border-color:#ffaa00}.chip[data-v="10000"]{border-color:#7dff9a}.chip[data-v="50000"]{border-color:#32c5ff}.chip[data-v="100000"]{border-color:#ff6a6a}
-  /* 路區：上（大路＋衍生三路）、下（珠盤） */
-  .roads{flex:1;display:grid;grid-template-rows:60% 40%;gap:6px;padding:8px;background:linear-gradient(180deg,#0b1223,#0a1020)}
-  .topRoads{display:grid;grid-template-columns:1fr .6fr .6fr .6fr;gap:6px}
+
+  /* ===== 路單（放大占比） ===== */
+  .roads{flex:1;display:grid;grid-template-rows:58% 42%;gap:6px;padding:8px;background:linear-gradient(180deg,#0b1223,#0a1020)}
+  .topRoads{display:grid;grid-template-columns:1.3fr .9fr .9fr .9fr;gap:6px}
   .grid{width:100%;height:100%;display:grid;background:#0b1120;border:1px solid rgba(255,255,255,.08)}
   .bead{grid-template-columns:repeat(30,1fr);grid-auto-rows:calc((100%)/6)}
   .big{grid-template-columns:repeat(60,1fr);grid-auto-rows:calc((100%)/6)}
@@ -68,11 +66,15 @@
   .cell{border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);display:grid;place-items:center;position:relative}
   .dot{width:16px;height:16px;border-radius:50%}
   .p{background:var(--player)} .b{background:var(--banker)} .t{background:var(--tie)}
-  .eye{width:12px;height:12px;border:3px solid var(--eye);border-radius:50%;background:transparent}
+  .eye{width:12px;height:12px;border:3px solid var(--eyeR);border-radius:50%;background:transparent}
   .eyeB{border-color:var(--eyeB)}
   .tie-mark{position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-radius:50%;background:var(--tie)}
-  /* 動作列 */
-  .actions{display:flex;gap:10px;justify-content:center;padding:10px;background:var(--panel2);border-top:1px solid rgba(255,255,255,.06)}
+
+  /* ===== 籌碼（縮小）與動作列 ===== */
+  .chips{padding:8px 6px;display:flex;gap:8px;justify-content:center;background:var(--panel2);border-top:1px solid rgba(255,255,255,.06)}
+  .chip{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:900;cursor:pointer;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.65) 60%, rgba(255,255,255,.3) 61%),conic-gradient(from 0turn,#fff0 0 22%,#fff 0 25%,#fff0 0 47%,#fff 0 50%,#fff0 0 72%,#fff 0 75%,#fff0 0);box-shadow:0 6px 14px rgba(0,0,0,.35);color:#101421;border:5px solid #2aa1ff;font-size:12px}
+  .chip[data-v="500"]{border-color:#8c9eff}.chip[data-v="1000"]{border-color:#00e8ff}.chip[data-v="5000"]{border-color:#ffaa00}.chip[data-v="10000"]{border-color:#7dff9a}.chip[data-v="50000"]{border-color:#32c5ff}.chip[data-v="100000"]{border-color:#ff6a6a}
+  .actions{display:flex;gap:8px;justify-content:center;padding:8px;background:var(--panel2);border-top:1px solid rgba(255,255,255,.06)}
   .btn{padding:10px 14px;border-radius:10px;font-weight:800;letter-spacing:.5px}
   .btn-ghost{background:#10182a;border:1px solid rgba(255,255,255,.15);color:var(--muted)}
   .btn-ok{background:linear-gradient(180deg,#10b981,#059669);border:1px solid rgba(255,255,255,.12)}
@@ -81,6 +83,7 @@
 </head>
 <body>
 <div class="phone">
+  <!-- 上：牌桌＋倒數 -->
   <div class="video" id="video">
     <div class="dealer"></div>
     <div class="countWrap">
@@ -92,14 +95,17 @@
       <span class="rb-p" id="rbp">P 0</span><span class="rb-s">:</span><span class="rb-b" id="rbb">B 0</span>
       <span class="rb-t" id="rbt" style="display:none;">TIE</span>
     </div>
+    <!-- 開牌：照規則顯示 2+2 → P3(如需) → B3(如需) -->
     <div class="reveal" id="reveal">
-      <div class="cards" id="pcards" style="transform:translate(-110%,-40%)"></div>
-      <div class="cards" id="bcards" style="transform:translate(10%,-40%)"></div>
+      <div class="cards" id="pcards" style="transform:translate(-110%,-38%)"></div>
+      <div class="cards" id="bcards" style="transform:translate(10%,-38%)"></div>
     </div>
   </div>
 
+  <!-- 狀態列 -->
   <div class="status">餘額：<span id="bal">100000</span></div>
 
+  <!-- 中：下注區（縮小） -->
   <div class="bet-grid" id="betGrid">
     <div class="tile pair" data-bet="ppair"><div class="name">閒對</div><div class="odd">1 : 11</div></div>
     <div class="tile super6" data-bet="super6"><div class="name">超級六</div><div class="odd">2張6→12:1；3張6→20:1</div></div>
@@ -109,16 +115,7 @@
     <div class="tile banker" data-bet="banker"><div class="name">莊</div><div class="odd">返 1.95</div></div>
   </div>
 
-  <div class="chips" id="chips">
-    <div class="chip" data-v="100">100</div>
-    <div class="chip" data-v="500">500</div>
-    <div class="chip" data-v="1000">1K</div>
-    <div class="chip" data-v="5000">5K</div>
-    <div class="chip" data-v="10000">10K</div>
-    <div class="chip" data-v="50000">50K</div>
-    <div class="chip" data-v="100000">100K</div>
-  </div>
-
+  <!-- 下：路單（放大） -->
   <div class="roads">
     <div class="topRoads">
       <div class="grid big" id="big"></div>
@@ -129,15 +126,25 @@
     <div class="grid bead" id="bead"></div>
   </div>
 
+  <!-- 最下：籌碼（縮）＋動作 -->
+  <div class="chips" id="chips">
+    <div class="chip" data-v="100">100</div>
+    <div class="chip" data-v="500">500</div>
+    <div class="chip" data-v="1000">1K</div>
+    <div class="chip" data-v="5000">5K</div>
+    <div class="chip" data-v="10000">10K</div>
+    <div class="chip" data-v="50000">50K</div>
+    <div class="chip" data-v="100000">100K</div>
+  </div>
   <div class="actions">
     <button class="btn btn-ghost" id="cancel">取消下注</button>
     <button class="btn btn-ok" id="confirm">確認下注</button>
   </div>
-  <div class="tip" id="tip">選籌碼 → 點下注區；可多次確認加注（限紅 100~100000）。</div>
+  <div class="tip" id="tip">選籌碼 → 點下注區；下注期內可多次「確認下注」（限紅 100~100000）。</div>
 </div>
 
 <script>
-/* ===== 參數 ===== */
+/* ===== 基本參數 ===== */
 const LIMIT_MIN=100, LIMIT_MAX=100000;
 const CHIPS=[100,500,1000,5000,10000,50000,100000];
 const PHASES={ BETTING:{key:'BETTING',label:'下注中',sec:15}, REVEAL:{key:'REVEAL',label:'開牌中',sec:5}, SETTLE:{key:'SETTLE',label:'結算中',sec:5} };
@@ -178,31 +185,24 @@ initGrid(roachEl, COLS_PAIR);
 const beadData=[...Array(COLS_BEAD)].map(()=>Array(ROWS).fill(null));
 let beadCol=0, beadRow=0;
 
-/* ===== 大路資料與衍生路演算 ===== */
+/* ===== 大路資料＋衍生路 ===== */
 const bigData=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(null));
 const bigTie=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(0));
-let bigCol=0,bigRow=0,lastMain=null; // p/b
-/* 用於衍生路的點位：只記錄每一手放在大路的 (c,r) */
-const bigSeq=[]; // {c,r,side:'p'|'b'}
+let bigCol=0,bigRow=0,lastMain=null; // 'p'|'b'
+const bigSeq=[]; // {c,r,side}
 
 function cellEl(container,c,r){return container.children[c*ROWS+r]||null}
-function clearColumn(container,c){
-  for(let r=0;r<ROWS;r++){const el=cellEl(container,c,r);if(el)el.innerHTML=''}
-}
+function clearColumn(container,c){ for(let r=0;r<ROWS;r++){const el=cellEl(container,c,r); if(el) el.innerHTML='';} }
 
-/* 大路畫點 */
+/* 大路：閒藍、莊紅、和綠（和不前進、疊點） */
 function drawBig(mark){ // 'p','b','t'
   if(mark==='t'){
-    if(bigCol>=0){
-      const el=cellEl(bigEl,bigCol,bigRow); if(el){const t=document.createElement('div');t.className='tie-mark';el.appendChild(t); bigTie[bigCol][bigRow]++;}
-    }
+    const el=cellEl(bigEl,bigCol,bigRow); if(el){const t=document.createElement('div');t.className='tie-mark';el.appendChild(t); bigTie[bigCol][bigRow]++;}
     return;
   }
-  if(lastMain===null){
-    bigCol=0; bigRow=0; lastMain=mark;
-  }else if(mark===lastMain){
-    if(bigRow<ROWS-1 && !bigData[bigCol][bigRow+1]) bigRow++;
-    else bigCol++;
+  if(lastMain===null){ bigCol=0; bigRow=0; lastMain=mark; }
+  else if(mark===lastMain){
+    if(bigRow<ROWS-1 && !bigData[bigCol][bigRow+1]) bigRow++; else bigCol++;
   }else{
     lastMain=mark; bigCol++; bigRow=0;
     while(bigData[bigCol] && bigData[bigCol][bigRow]) bigCol++;
@@ -211,77 +211,62 @@ function drawBig(mark){ // 'p','b','t'
   bigData[bigCol][bigRow]=mark;
   const el=cellEl(bigEl,bigCol,bigRow); const d=document.createElement('div'); d.className=`dot ${mark}`; el.appendChild(d);
   bigSeq.push({c:bigCol,r:bigRow,side:mark});
-  /* 衍生路：當新增大路點位時，同步推衍 */
   deriveAndDraw();
 }
 
-/* 取得欄深度（由上往下連續占用） */
-function colDepth(col){
-  if(col<0) return 0;
-  let n=0; for(let r=0;r<ROWS;r++){ if(bigData[col] && bigData[col][r]) n++; else break; } return n;
-}
-/* 檢查某欄某列是否有占用 */
+/* 衍生路算法（澳門規則） */
+function colDepth(col){ if(col<0) return 0; let n=0; for(let r=0;r<ROWS;r++){ if(bigData[col] && bigData[col][r]) n++; else break; } return n; }
 function filled(col,row){ return !!(bigData[col] && bigData[col][row]); }
 
-/* 衍生路演算法（澳門規則）：
-   - 大眼仔：參考 c-1 與 c-2 欄
-   - 小路：參考 c-1 與 c-3 欄
-   - 曱甴路：參考 c-1 與 c-4 欄
-   規則：
-   - 若新點位在欄位頂部（row==0）→ 比較兩參考欄「欄深是否相等」，相等=紅，不等=藍
-   - 若 row>0 → 看 (c-1,row-1) 是否已佔用，佔用=紅，未佔用=藍
-*/
-const eyeData=[...Array(COLS_PAIR)].map(()=>Array(ROWS).fill(null));
-const smallData=[...Array(COLS_PAIR)].map(()=>Array(ROWS).fill(null));
-const roachData=[...Array(COLS_PAIR)].map(()=>Array(ROWS).fill(null));
-let eyeC=0,eyeR=0, smallC=0,smallR=0, roachC=0,roachR=0; // 實際畫到哪一欄
+const eyeEl=bigEyeEl, smallElEl=smallEl, roachElEl=roachEl;
+let eyeC=0,eyeR=0, smallC=0,smallR=0, roachC=0,roachR=0;
 
-function pushDerived(which, color){
-  const cont = which==='eye'?bigEyeEl: which==='small'?smallEl: roachEl;
+function pushDerived(which, color){ // color: 'red' or 'blue'
+  const cont = which==='eye'?eyeEl: which==='small'?smallElEl: roachElEl;
   let C = which==='eye'?eyeC: which==='small'?smallC: roachC;
   let R = which==='eye'?eyeR: which==='small'?smallR: roachR;
-  // 同一欄往下，超到底就右移
   if(R<ROWS-1 && !cellEl(cont,C,R+1).hasChildNodes()){ R++; }
-  else{ C++; R=0; clearColumn(cont, C); }
-  const el=cellEl(cont,C,R); const d=document.createElement('div'); d.className=`eye ${color==='red'?'':'eyeB'}`; el.appendChild(d);
+  else{ C++; R=0; clearColumn(cont,C); }
+  const el=cellEl(cont,C,R);
+  const dot=document.createElement('div'); dot.className=`eye ${color==='red'?'':'eyeB'}`;
+  el.appendChild(dot);
   if(which==='eye'){eyeC=C;eyeR=R}else if(which==='small'){smallC=C;smallR=R}else{roachC=C;roachR=R}
 }
 
 function deriveAndDraw(){
   const last = bigSeq[bigSeq.length-1]; if(!last) return;
   const {c,r}=last;
-  // 大眼仔：至少需要第2欄
+  // 大眼仔：c>=1
   if(c>=1){
     let color;
-    if(r===0){ color = (colDepth(c-1)===colDepth(c-2))?'red':'blue'; }
-    else{ color = filled(c-1,r-1)?'red':'blue'; }
+    if(r===0) color = (colDepth(c-1)===colDepth(c-2))?'red':'blue';
+    else color = filled(c-1,r-1)?'red':'blue';
     pushDerived('eye',color);
   }
-  // 小路（c >= 2）
+  // 小路：c>=2
   if(c>=2){
     let color;
-    if(r===0){ color = (colDepth(c-1)===colDepth(c-3))?'red':'blue'; }
-    else{ color = filled(c-2,r-1)?'red':'blue'; }
+    if(r===0) color = (colDepth(c-1)===colDepth(c-3))?'red':'blue';
+    else color = filled(c-2,r-1)?'red':'blue';
     pushDerived('small',color);
   }
-  // 曱甴路（c >= 3）
+  // 曱甴路：c>=3
   if(c>=3){
     let color;
-    if(r===0){ color = (colDepth(c-1)===colDepth(c-4))?'red':'blue'; }
-    else{ color = filled(c-3,r-1)?'red':'blue'; }
+    if(r===0) color = (colDepth(c-1)===colDepth(c-4))?'red':'blue';
+    else color = filled(c-3,r-1)?'red':'blue';
     pushDerived('roach',color);
   }
 }
 
-/* 珠盤 */
+/* 珠盤（左→右、上→下） */
 function drawBead(mark){
   const idx=beadCol*ROWS+beadRow, el=beadEl.children[idx];
   const d=document.createElement('div'); d.className=`dot ${mark}`; el.appendChild(d);
-  beadRow++;
-  if(beadRow>=ROWS){ beadRow=0; beadCol=(beadCol+1)%COLS_BEAD; clearColumn(beadEl,beadCol); }
+  beadRow++; if(beadRow>=ROWS){ beadRow=0; beadCol=(beadCol+1)%COLS_BEAD; clearColumn(beadEl,beadCol); }
 }
 
-/* ===== 發牌與規則 ===== */
+/* ===== 牌堆與牌值 ===== */
 const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 const SUITS=['♠','♥','♣','♦'];
 function buildShoe(decks=8){const s=[];for(let d=0;d<decks;d++){for(const r of RANKS){for(const t of SUITS){s.push({r,s:t})}}}shuffle(s);return s}
@@ -292,30 +277,57 @@ function val(r){ return r==='A'?1 : (r==='10'||r==='J'||r==='Q'||r==='K'?0:parse
 function total(cs){return cs.reduce((a,c)=>(a+val(c.r))%10,0)}
 function face(c){return `${c.r}${c.s}`}
 
-/* 標準百家樂補牌規則 */
-function dealRound(){
+/* ===== 標準補牌規則（動畫順序：P二→B二→P三?→B三?，普通節奏 0.6s/張） ===== */
+function dealRoundAnimated(cbDone){
   const p=[draw(),draw()], b=[draw(),draw()];
   let pt=total(p), bt=total(b);
   const pNat=pt>=8, bNat=bt>=8;
-  let pThird=null;
+  let pThird=null, bThird=null;
 
-  if(!(pNat||bNat)){
-    if(pt<=5){ pThird=draw(); p.push(pThird); pt=total(p) }
-    if(pThird===null){
-      if(bt<=5){ b.push(draw()); bt=total(b) }
-    }else{
-      const t=val(pThird.r);
-      if(bt<=2){ b.push(draw()) }
-      else if(bt===3 && t!==8){ b.push(draw()) }
-      else if(bt===4 && t>=2 && t<=7){ b.push(draw()) }
-      else if(bt===5 && t>=4 && t<=7){ b.push(draw()) }
-      else if(bt===6 && (t===6||t===7)){ b.push(draw()) }
-      bt=total(b);
+  revealLayer.style.display='block';
+  pWrap.innerHTML=''; bWrap.innerHTML='';
+
+  const addCard=(wrap,card,delay)=>new Promise(res=>{
+    const el=createCard(face(card)); wrap.appendChild(el);
+    setTimeout(()=>{el.classList.add('flip'); res();}, 160); // 翻面
+    setTimeout(res, delay); // 節奏延時
+  });
+
+  (async ()=>{
+    // P1,P2
+    await addCard(pWrap,p[0], 600);
+    await addCard(pWrap,p[1], 600);
+    // B1,B2
+    await addCard(bWrap,b[0], 600);
+    await addCard(bWrap,b[1], 600);
+
+    pt=total(p); bt=total(b);
+    const pNatNow=pt>=8, bNatNow=bt>=8;
+
+    if(!(pNatNow||bNatNow)){
+      if(pt<=5){ pThird=draw(); p.push(pThird); pt=total(p); await addCard(pWrap,pThird, 600); }
+      if(pThird===null){
+        if(bt<=5){ bThird=draw(); b.push(bThird); bt=total(b); await addCard(bWrap,bThird, 600); }
+      }else{
+        const t=val(pThird.r);
+        let needB=false;
+        if(bt<=2) needB=true;
+        else if(bt===3 && t!==8) needB=true;
+        else if(bt===4 && (t>=2 && t<=7)) needB=true;
+        else if(bt===5 && (t>=4 && t<=7)) needB=true;
+        else if(bt===6 && (t===6 || t===7)) needB=true;
+        if(needB){ bThird=draw(); b.push(bThird); bt=total(b); await addCard(bWrap,bThird, 600); }
+      }
     }
-  }
-  const ppair = (p[0].r===p[1].r), bpair=(b[0].r===b[1].r);
-  const winner = pt>bt?'player': bt>pt?'banker':'tie';
-  return {pCards:p,bCards:b,pTotal:pt,bTotal:bt,winner,ppair,bpair};
+
+    const ppair=(p[0].r===p[1].r), bpair=(b[0].r===b[1].r);
+    const winner = pt>bt?'player': bt>pt?'banker':'tie';
+
+    rb.style.display='flex'; rbt.style.display='none';
+    rbp.textContent=`P ${pt}`; rbb.textContent=`B ${bt}`; if(winner==='tie') rbt.style.display='inline';
+
+    cbDone({pCards:p,bCards:b,pTotal:pt,bTotal:bt,winner,ppair,bpair});
+  })();
 }
 
 /* ===== 賠付 ===== */
@@ -335,7 +347,7 @@ function payout(info, bet){
 /* ===== 倒數與階段 ===== */
 function setRing(rate){
   const deg=Math.max(0,Math.min(1,rate))*360;
-  const col=phase===PHASES.BETTING?'var(--ok)':(phase===PHASES.REVEAL?'var(--warn)':'#38bdf8');
+  const col=phase===PHASES.BETTING?'var(--ok)':(phase===PHASES.REVEAL?'var(--warn)':'var(--settle)');
   ring.style.background=`conic-gradient(${col} 0 ${deg}deg, rgba(255,255,255,.12) ${deg}deg 360deg)`;
 }
 function startClock(){
@@ -360,36 +372,27 @@ function nextPhase(){
 
 /* ===== 開牌與結算 ===== */
 function startReveal(){
-  roundInfo=dealRound();
-  revealLayer.style.display='block';
-  pWrap.innerHTML=''; bWrap.innerHTML='';
-
-  rb.style.display='flex'; rbt.style.display='none';
-  rbp.textContent=`P ${roundInfo.pTotal}`; rbb.textContent=`B ${roundInfo.bTotal}`;
-  if(roundInfo.winner==='tie') rbt.style.display='inline';
-
-  const add=(arr,wrap)=>arr.forEach((cv,i)=>{const c=createCard(face(cv));wrap.appendChild(c);setTimeout(()=>c.classList.add('flip'),150*i+120);});
-  add(roundInfo.pCards,pWrap); add(roundInfo.bCards,bWrap);
-  tip('開牌中…');
+  dealRoundAnimated((info)=>{
+    roundInfo=info;
+    // 路單：p=藍、b=紅、t=綠
+    const mark = info.winner==='player'?'p':info.winner==='banker'?'b':'t';
+    drawBead(mark);
+    drawBig(mark);
+    tip('開牌中…');
+  });
 }
+
 function settle(){
   const info=roundInfo; if(!info) return;
-  // 路單
-  const mark = info.winner==='player'?'p':info.winner==='banker'?'b':'t';
-  drawBead(mark);
-  drawBig(mark);
-
-  // 派彩
   const winAmt=payout(info,placed);
   balance+=winAmt; balEl.textContent=fmt(balance);
-
   let s6='';
   if(info.winner==='banker' && info.bTotal===6) s6 = `（超級六：${info.bCards.length===3?'3張6→20:1':'2張6→12:1'}）`;
   const resName=info.winner==='player'?'閒':info.winner==='banker'?'莊':'和';
   tip(`結果：${resName}${s6}　派彩 +${fmt(winAmt)}　5秒後新局`);
 }
 
-/* ===== 下注（可多次確認；不可超過餘額；取消僅清未確認） ===== */
+/* ===== 下注（多次確認；不可超過餘額；取消僅清未確認） ===== */
 function total(obj){ return Object.values(obj).reduce((a,b)=>a+b,0) }
 function available(){ return balance - total(placed) - total(pending) }
 
@@ -453,8 +456,7 @@ function tip(t){ tipEl.textContent=t; }
 /* ===== 啟動 ===== */
 balEl.textContent=fmt(balance);
 showPending();
-function start(){ startClock(); }
-start();
+(function start(){ startClock(); })();
 </script>
 </body>
 </html>
