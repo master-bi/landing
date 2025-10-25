@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>行動百家樂 v3.1（封盤+補牌動畫+完整路單）</title>
+<title>行動百家樂 v3.2（米字三路＋封盤＋補牌動畫）</title>
 <style>
   :root{
     --bg:#0f1320; --panel:#12182a; --panel2:#0b1223; --bar:#0d1220;
     --text:#e9f3ff; --muted:#8aa1c5; --ok:#22c55e; --warn:#facc15; --settle:#38bdf8;
-    --player:#1fa2ff; --banker:#ff2257; --tie:#59d37a; /* 牌路顏色規範 */
+    /* 牌路顏色規範：閒=藍、莊=紅、和=綠 */
+    --player:#1fa2ff; --banker:#ff2257; --tie:#59d37a;
     --eyeR:#ff6d6d; --eyeB:#5fb0ff;
   }
   *{box-sizing:border-box}
@@ -29,7 +30,7 @@
   .rb-p{color:var(--player)} .rb-b{color:var(--banker)} .rb-t{color:var(--tie)}
   .rb-s{font-weight:900;padding:0 6px;border-radius:6px;background:rgba(255,255,255,.08)}
 
-  /* 開牌動畫（0.8s/張） */
+  /* 開牌動畫 */
   .reveal{position:absolute;inset:0;display:none;pointer-events:none}
   .cards{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);display:flex;gap:6px}
   .card{width:54px;height:74px;border-radius:8px;background:#fff;box-shadow:0 6px 18px rgba(0,0,0,.6);transform-style:preserve-3d;transform:rotateY(180deg);transition:transform .45s ease}
@@ -40,9 +41,8 @@
 
   /* 狀態列 */
   .status{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bar);border-bottom:1px solid rgba(255,255,255,.06);font-size:14px}
-  .money{margin-left:auto;font-weight:800}
 
-  /* 下注區（縮） */
+  /* 下注區（再小一點） */
   .bet-grid{background:var(--panel);padding:6px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-bottom:1px solid rgba(255,255,255,.06)}
   .tile{position:relative;border-radius:10px;padding:8px 6px 10px;text-align:center;background:linear-gradient(180deg,#121a33,#0e1428);border:1px solid rgba(255,255,255,.08);box-shadow:0 6px 14px rgba(0,0,0,.25) inset;user-select:none;cursor:pointer}
   .tile .name{font-size:16px;font-weight:800;letter-spacing:2px}
@@ -53,8 +53,8 @@
   .winshine{position:absolute;inset:0;border-radius:10px;box-shadow:0 0 0 2px #fff inset;animation:shine .8s ease-out both}
   @keyframes shine{from{box-shadow:0 0 0 2px rgba(255,255,255,.0) inset}to{box-shadow:0 0 0 3px rgba(255,255,255,.8) inset}}
 
-  /* 路單（放大） */
-  .roads{flex:1;display:grid;grid-template-rows:58% 42%;gap:6px;padding:8px;background:linear-gradient(180deg,#0b1223,#0a1020)}
+  /* 路單（放大到 62%） */
+  .roads{flex:1;display:grid;grid-template-rows:62% 38%;gap:6px;padding:8px;background:linear-gradient(180deg,#0b1223,#0a1020)}
   .topRoads{display:grid;grid-template-columns:1.3fr .9fr .9fr .9fr;gap:6px}
   .grid{width:100%;height:100%;display:grid;background:#0b1120;border:1px solid rgba(255,255,255,.08)}
   .bead{grid-template-columns:repeat(30,1fr);grid-auto-rows:calc((100%)/6)}
@@ -62,20 +62,34 @@
   .pairGrid{grid-template-columns:repeat(30,1fr);grid-auto-rows:calc((100%)/6)}
   .cell{border-right:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06);display:grid;place-items:center;position:relative}
 
-  /* ★ 牌路顏色：閒=藍、莊=紅、和=綠 */
+  /* 珠盤/大路：閒=藍、莊=紅、和=綠 */
   .dot{width:16px;height:16px;border-radius:50%}
-  .dot.p{background:#1fa2ff}  /* Player 藍 */
-  .dot.b{background:#ff2257}  /* Banker 紅 */
-  .dot.t{background:#59d37a}  /* Tie 綠 */
-
-  /* 衍生三路：紅=eyeR、藍=eyeB */
-  .eye{width:12px;height:12px;border:3px solid var(--eyeR);border-radius:50%;background:transparent}
-  .eyeB{border-color:var(--eyeB)}
+  .dot.p{background:#1fa2ff}
+  .dot.b{background:#ff2257}
+  .dot.t{background:#59d37a}
   .tie-mark{position:absolute;right:2px;bottom:2px;width:6px;height:6px;border-radius:50%;background:var(--tie)}
 
-  /* 籌碼（縮）+ 動作列 */
+  /* ★ 三路（大眼仔/小路/曱甴）採用米字風（紅/藍） */
+  .stamp{width:14px;height:14px;border-radius:3px;position:relative}
+  /* 用雙斜線交叉的米字效果：兩層 repeating-linear-gradient 疊合 */
+  .stamp.red{
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0) 0 3px, rgba(255,255,255,0) 3px 6px),
+      repeating-linear-gradient(45deg, #ff6d6d 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(135deg, #ff6d6d 0 2px, transparent 2px 6px);
+    box-shadow:0 0 0 1px rgba(255,255,255,.18) inset;
+  }
+  .stamp.blue{
+    background:
+      repeating-linear-gradient(45deg, rgba(255,255,255,0) 0 3px, rgba(255,255,255,0) 3px 6px),
+      repeating-linear-gradient(45deg, #5fb0ff 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(135deg, #5fb0ff 0 2px, transparent 2px 6px);
+    box-shadow:0 0 0 1px rgba(255,255,255,.18) inset;
+  }
+
+  /* 籌碼（再縮小一點）＋動作列 */
   .chips{padding:8px 6px;display:flex;gap:8px;justify-content:center;background:var(--panel2);border-top:1px solid rgba(255,255,255,.06)}
-  .chip{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:900;cursor:pointer;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.65) 60%, rgba(255,255,255,.3) 61%),conic-gradient(from 0turn,#fff0 0 22%,#fff 0 25%,#fff0 0 47%,#fff 0 50%,#fff0 0 72%,#fff 0 75%,#fff0 0);box-shadow:0 6px 14px rgba(0,0,0,.35);color:#101421;border:5px solid #2aa1ff;font-size:12px}
+  .chip{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:900;cursor:pointer;background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.65) 60%, rgba(255,255,255,.3) 61%),conic-gradient(from 0turn,#fff0 0 22%,#fff 0 25%,#fff0 0 47%,#fff 0 50%,#fff0 0 72%,#fff 0 75%,#fff0 0);box-shadow:0 6px 14px rgba(0,0,0,.35);color:#101421;border:5px solid #2aa1ff;font-size:11px}
   .chip[data-v="500"]{border-color:#8c9eff}.chip[data-v="1000"]{border-color:#00e8ff}.chip[data-v="5000"]{border-color:#ffaa00}.chip[data-v="10000"]{border-color:#7dff9a}.chip[data-v="50000"]{border-color:#32c5ff}.chip[data-v="100000"]{border-color:#ff6a6a}
   .actions{display:flex;gap:8px;justify-content:center;padding:8px;background:var(--panel2);border-top:1px solid rgba(255,255,255,.06)}
   .btn{padding:10px 14px;border-radius:10px;font-weight:800;letter-spacing:.5px}
@@ -98,12 +112,14 @@
       <span class="rb-p" id="rbp">P 0</span><span class="rb-s">:</span><span class="rb-b" id="rbb">B 0</span>
       <span class="rb-t" id="rbt" style="display:none;">TIE</span>
     </div>
+    <!-- 開牌 -->
     <div class="reveal" id="reveal">
       <div class="cards" id="pcards" style="transform:translate(-110%,-38%)"></div>
       <div class="cards" id="bcards" style="transform:translate(10%,-38%)"></div>
     </div>
   </div>
 
+  <!-- 狀態列 -->
   <div class="status">餘額：<span id="bal">100000</span></div>
 
   <!-- 下注 -->
@@ -151,10 +167,12 @@ const CHIPS=[100,500,1000,5000,10000,50000,100000];
 const PHASES={ BETTING:{key:'BETTING',label:'下注中',sec:15}, REVEAL:{key:'REVEAL',label:'開牌中',sec:5}, SETTLE:{key:'SETTLE',label:'結算中',sec:5} };
 let phase=PHASES.BETTING, secLeft=phase.sec, timer=null;
 let balance=100000, choChip=CHIPS[0];
+
+/* 注單 */
 const pending={player:0,banker:0,tie:0,ppair:0,bpair:0,super6:0};
 const placed ={player:0,banker:0,tie:0,ppair:0,bpair:0,super6:0};
 
-/* ===== DOM ===== */
+/* DOM */
 const $=s=>document.querySelector(s);
 const ring=$('#ring'), cd=$('#cd'), phaseEl=$('#phase'), balEl=$('#bal'), tipEl=$('#tip');
 const betGrid=$('#betGrid'), chips=$('#chips');
@@ -162,22 +180,20 @@ const revealLayer=$('#reveal'), pWrap=$('#pcards'), bWrap=$('#bcards');
 const rb=$('#rb'), rbp=$('#rbp'), rbb=$('#rbb'), rbt=$('#rbt');
 const beadEl=$('#bead'), bigEl=$('#big'), eyeEl=$('#bigeye'), smallEl=$('#smallroad'), roachEl=$('#roach');
 
-/* ===== 路格 ===== */
+/* 路格 */
 const ROWS=6, COLS_BEAD=30, COLS_BIG=60, COLS_PAIR=30;
 function initGrid(container, cols){ container.innerHTML=''; for(let c=0;c<cols;c++){ for(let r=0;r<ROWS;r++){ const cell=document.createElement('div'); cell.className='cell'; cell.dataset.c=c; cell.dataset.r=r; container.appendChild(cell); } } }
 initGrid(beadEl, COLS_BEAD); initGrid(bigEl, COLS_BIG); initGrid(eyeEl, COLS_PAIR); initGrid(smallEl, COLS_PAIR); initGrid(roachEl, COLS_PAIR);
 
-/* ===== 珠盤資料 ===== */
 let beadCol=0, beadRow=0;
-
-/* ===== 大路＋衍生路資料 ===== */
-const bigData=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(null));
-let bigTie=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(0));
-let bigCol=0, bigRow=0, lastMain=null; // 'p'|'b'
-const bigSeq=[];
-
 function cellEl(container,c,r){return container.children[c*ROWS+r]||null}
 function clearColumn(container,c){ for(let r=0;r<ROWS;r++){ const el=cellEl(container,c,r); if(el) el.innerHTML=''; } }
+
+/* 大路資料＋衍生路 */
+const bigData=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(null));
+let bigTie=[...Array(COLS_BIG)].map(()=>Array(ROWS).fill(0));
+let bigCol=0,bigRow=0,lastMain=null; // 'p'|'b'
+const bigSeq=[];
 
 /* 珠盤：左→右，上→下 */
 function drawBead(mark){
@@ -188,11 +204,22 @@ function drawBead(mark){
 
 /* 大路：閒=p 藍；莊=b 紅；和=t 綠(不前進、疊點) */
 function drawBig(mark){
-  if(mark==='t'){ const el=cellEl(bigEl,bigCol,bigRow); if(el){ const t=document.createElement('div'); t.className='tie-mark'; el.appendChild(t); bigTie[bigCol][bigRow]++; } return; }
+  if(mark==='t'){
+    const el=cellEl(bigEl,bigCol,bigRow);
+    if(el){ const t=document.createElement('div'); t.className='tie-mark'; el.appendChild(t); bigTie[bigCol][bigRow]++; }
+    return;
+  }
   if(lastMain===null){ bigCol=0; bigRow=0; lastMain=mark; }
-  else if(mark===lastMain){ if(bigRow<ROWS-1 && !bigData[bigCol][bigRow+1]) bigRow++; else bigCol++; }
-  else{ lastMain=mark; bigCol++; bigRow=0; while(bigData[bigCol] && bigData[bigCol][bigRow]) bigCol++; }
-  if(bigCol>=COLS_BIG){ bigCol=COLS_BIG-1; clearColumn(bigEl,bigCol); bigRow=0; for(let r=0;r<ROWS;r++){bigData[bigCol][r]=null} }
+  else if(mark===lastMain){
+    if(bigRow<ROWS-1 && !bigData[bigCol][bigRow+1]) bigRow++;
+    else bigCol++;
+  }else{
+    lastMain=mark; bigCol++; bigRow=0;
+    while(bigData[bigCol] && bigData[bigCol][bigRow]) bigCol++;
+  }
+  if(bigCol>=COLS_BIG){
+    bigCol=COLS_BIG-1; clearColumn(bigEl,bigCol); bigRow=0; for(let r=0;r<ROWS;r++){bigData[bigCol][r]=null}
+  }
   bigData[bigCol][bigRow]=mark;
   const el=cellEl(bigEl,bigCol,bigRow), d=document.createElement('div'); d.className=`dot ${mark}`; el.appendChild(d);
   bigSeq.push({c:bigCol,r:bigRow,side:mark});
@@ -204,12 +231,14 @@ function colDepth(col){ if(col<0) return 0; let n=0; for(let r=0;r<ROWS;r++){ if
 function filled(col,row){ return !!(bigData[col] && bigData[col][row]); }
 
 let eyeC=0,eyeR=0, smallC=0,smallR=0, roachC=0,roachR=0;
-function pushDerived(cont, which, color){
+function pushDerived(cont, which, color){ // color='red'|'blue'
   let C = which==='eye'?eyeC: which==='small'?smallC: roachC;
   let R = which==='eye'?eyeR: which==='small'?smallR: roachR;
   if(R<ROWS-1 && !cellEl(cont,C,R+1).hasChildNodes()){ R++; }
   else{ C++; R=0; clearColumn(cont,C); }
-  const el=cellEl(cont,C,R), dot=document.createElement('div'); dot.className=`eye ${color==='red'?'':'eyeB'}`; el.appendChild(dot);
+  const el=cellEl(cont,C,R), dot=document.createElement('div');
+  dot.className=`stamp ${color==='red'?'red':'blue'}`;
+  el.appendChild(dot);
   if(which==='eye'){eyeC=C;eyeR=R}else if(which==='small'){smallC=C;smallR=R}else{roachC=C;roachR=R}
 }
 function deriveAndDraw(){
@@ -230,43 +259,7 @@ function startClock(){
   setRing(1); cd.textContent=secLeft;
   timer=setInterval(()=>{secLeft--; cd.textContent=secLeft; setRing(secLeft/phase.sec); if(secLeft<=0){clearInterval(timer); nextPhase();}},1000);
 }
-
-/* 下注可用額度 */
-function total(obj){ return Object.values(obj).reduce((a,b)=>a+b,0) }
-function available(){ return balance - total(placed) - total(pending) }
-
-/* 籌碼/下注 */
-chips.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{choChip=+c.dataset.v; tip(`選擇籌碼 ${fmt(choChip)}`)}));
-betGrid.querySelectorAll('.tile').forEach(t=>{
-  t.addEventListener('click',()=>{
-    if(phase!==PHASES.BETTING) return;
-    const k=t.dataset.bet, av=available();
-    if(choChip>av){ tip('可用餘額不足'); return; }
-    const newSum = placed[k] + pending[k] + choChip;
-    if(newSum>LIMIT_MAX){ tip('超過限紅 100000'); return; }
-    pending[k]+=choChip; showPending(); flash(t);
-  });
-});
-$('#cancel').addEventListener('click',()=>{ for(const k in pending) pending[k]=0; showPending(); tip('已取消未確認的注單'); });
-$('#confirm').addEventListener('click',()=>{
-  if(phase!==PHASES.BETTING){ tip('已停止下注'); return; }
-  const pendTotal=total(pending); if(pendTotal===0){ tip('尚未選擇任何注項'); return; }
-  for(const k in pending){
-    const sum=placed[k]+pending[k];
-    if(sum>0 && sum<LIMIT_MIN){ tip('每門至少 100'); return; }
-    if(sum>LIMIT_MAX){ tip('超過限紅 100000'); return; }
-  }
-  balance -= pendTotal; balEl.textContent=fmt(balance);
-  for(const k in pending){ placed[k]+=pending[k]; pending[k]=0; }
-  showPending(); tip('已確認下注（可繼續加注直至封盤）');
-});
-function showPending(){
-  betGrid.querySelectorAll('.tile').forEach(t=>{
-    const k=t.dataset.bet, p=pending[k], b=placed[k], odd=t.querySelector('.odd');
-    let base=(k==='player')?'1 : 1':(k==='banker')?'返 1.95':(k==='tie')?'1 : 8':(k==='ppair'||k==='bpair')?'1 : 11':'2張6→12:1；3張6→20:1';
-    let extra=''; if(b) extra+=` | 已下 ${fmt(b)}`; if(p) extra+=` | 暫存 ${fmt(p)}`; odd.textContent=base+(extra?('　'+extra):'');
-  });
-}
+function lockBets(lock){ betGrid.querySelectorAll('.tile').forEach(t=>t.classList.toggle('lock',lock)) }
 
 /* 洗牌與牌值 */
 const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
@@ -279,7 +272,7 @@ function val(r){ return r==='A'?1 : (r==='10'||r==='J'||r==='Q'||r==='K'?0:parse
 function totalPts(cs){return cs.reduce((a,c)=>(a+val(c.r))%10,0)}
 function face(c){return `${c.r}${c.s}`}
 
-/* 開牌動畫（標準補牌） */
+/* 開牌動畫（標準補牌，0.8s/張） */
 async function dealRoundAnimated(){
   const p=[draw(),draw()], b=[draw(),draw()];
   let pt=totalPts(p), bt=totalPts(b);
@@ -316,10 +309,8 @@ async function dealRoundAnimated(){
     }
   }
 
-  // 顯示點數
   rb.style.display='flex'; rbt.style.display='none';
-  rbp.textContent=`P ${pt}`; rbb.textContent=`B ${bt}`;
-  if(pt===bt){ rbt.style.display='inline'; }
+  rbp.textContent=`P ${pt}`; rbb.textContent=`B ${bt}`; if(pt===bt){ rbt.style.display='inline'; }
 
   const ppair=(p[0].r===p[1].r), bpair=(b[0].r===b[1].r);
   const winner = pt>bt?'player': bt>pt?'banker':'tie';
@@ -340,35 +331,84 @@ function payout(info, bet){
   return win;
 }
 
-/* 階段切換：含「封盤 1 秒」與自動清 pending */
+/* 階段切換（含封盤 1 秒 & 自動清 pending） */
 async function nextPhase(){
-  if(phase===PHASES.BETTING){
-    // 封盤：清掉未確認下注
+  try{
+    if(phase===PHASES.BETTING){
+      for(const k in pending) pending[k]=0; // 時間到自動取消未確認
+      showPending(); lockBets(true);
+
+      phaseEl.textContent='封盤中…';
+      setRing(1); cd.textContent='';
+      await new Promise(r=>setTimeout(r,1000));
+
+      phase=PHASES.REVEAL; startClock();
+      const info = await dealRoundAnimated();
+
+      const mark = info.winner==='player'?'p':info.winner==='banker'?'b':'t';
+      drawBead(mark); drawBig(mark);
+
+      const winAmt = payout(info, placed);
+      balance += winAmt; balEl.textContent = fmt(balance);
+      tip(`結果：${info.winner==='player'?'閒':info.winner==='banker'?'莊':'和'}　派彩 +${fmt(winAmt)}`);
+      return;
+    }
+    if(phase===PHASES.REVEAL){
+      phase=PHASES.SETTLE; startClock(); return;
+    }
+    if(phase===PHASES.SETTLE){
+      for(const k in placed) placed[k]=0;
+      lockBets(false); revealLayer.style.display='none'; $('#rb').style.display='none';
+      tip('新一局開始（可多次確認加注；限紅 100~100000）');
+      phase=PHASES.BETTING; startClock(); return;
+    }
+  }catch(err){
+    console.error('nextPhase error:', err);
+    tip('系統已自動重開新局');
     for(const k in pending) pending[k]=0;
-    showPending();
-    lockBets(true);
-    phaseEl.textContent='封盤中…';
-    setRing(1); cd.textContent=''; // 圈圈保留，字清空
-    await new Promise(r=>setTimeout(r,1000)); // 1 秒提示
-    // 進入開牌
-    phase=PHASES.REVEAL; startClock();
-    // 開牌動畫完成後才畫路單與結算
-    const info=await dealRoundAnimated();
-    // 路單（p=藍、b=紅、t=綠）
-    const mark = info.winner==='player'?'p':info.winner==='banker'?'b':'t';
-    drawBead(mark); drawBig(mark);
-    // 派彩
-    const winAmt=payout(info,placed);
-    balance+=winAmt; balEl.textContent=fmt(balance);
-    tip(`結果：${info.winner==='player'?'閒':info.winner==='banker'?'莊':'和'}　派彩 +${fmt(winAmt)}`);
-  }else if(phase===PHASES.REVEAL){
-    phase=PHASES.SETTLE; startClock();
-  }else{
-    // 新局
     for(const k in placed) placed[k]=0;
-    lockBets(false); revealLayer.style.display='none'; rb.style.display='none';
-    tip('新一局開始（可多次確認加注；限紅 100~100000）'); phase=PHASES.BETTING; startClock();
+    revealLayer.style.display='none';
+    $('#rb').style.display='none';
+    lockBets(false);
+    phase=PHASES.BETTING; startClock();
   }
+}
+
+/* 下注（多次確認；取消僅清未確認） */
+function total(obj){ return Object.values(obj).reduce((a,b)=>a+b,0) }
+function available(){ return balance - total(placed) - total(pending) }
+
+chips.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{choChip=+c.dataset.v; tip(`選擇籌碼 ${fmt(choChip)}`)}));
+betGrid.querySelectorAll('.tile').forEach(t=>{
+  t.addEventListener('click',()=>{
+    if(phase!==PHASES.BETTING) return;
+    const k=t.dataset.bet, av=available();
+    if(choChip>av){ tip('可用餘額不足'); return; }
+    const newSum = placed[k] + pending[k] + choChip;
+    if(newSum>LIMIT_MAX){ tip('超過限紅 100000'); return; }
+    pending[k]+=choChip; showPending(); flash(t);
+  });
+});
+$('#cancel').addEventListener('click',()=>{ for(const k in pending) pending[k]=0; showPending(); tip('已取消未確認的注單'); });
+$('#confirm').addEventListener('click',()=>{
+  if(phase!==PHASES.BETTING){ tip('已停止下注'); return; }
+  const pendTotal=total(pending); if(pendTotal===0){ tip('尚未選擇任何注項'); return; }
+  for(const k in pending){
+    const sum=placed[k]+pending[k];
+    if(sum>0 && sum<LIMIT_MIN){ tip('每門至少 100'); return; }
+    if(sum>LIMIT_MAX){ tip('超過限紅 100000'); return; }
+  }
+  balance -= pendTotal; balEl.textContent=fmt(balance);
+  for(const k in pending){ placed[k]+=pending[k]; pending[k]=0; }
+  showPending(); tip('已確認下注（可繼續加注直至封盤）');
+});
+function showPending(){
+  betGrid.querySelectorAll('.tile').forEach(t=>{
+    const k=t.dataset.bet, p=pending[k], b=placed[k], odd=t.querySelector('.odd');
+    let base=(k==='player')?'1 : 1':(k==='banker')?'返 1.95':(k==='tie')?'1 : 8':(k==='ppair'||k==='bpair')?'1 : 11':'2張6→12:1；3張6→20:1';
+    let extra=''; if(b) extra+=` | 已下 ${fmt(b)}`; if(p) extra+=` | 暫存 ${fmt(p)}`;
+    odd.textContent=base+(extra?('　'+extra):'');
+  });
 }
 
 /* 小工具 */
