@@ -195,33 +195,33 @@
         <label for="baseCurrency">外幣</label>
         <select id="baseCurrency">
           <option value="USD">USD 美元</option>
-          <option value="TWD">TWD 新台幣</option>
+          <option value="TWD">TWD 新臺幣</option>
           <option value="VND">VND 越南盾</option>
           <option value="KHR">KHR 柬埔寨瑞爾</option>
-          <option value="SGD">SGD 新加坡幣</option>
+          <option value="SGD">SGD 新加坡元</option>
           <option value="MYR">MYR 馬來西亞令吉</option>
-          <option value="HKD">HKD 香港幣</option>
-          <option value="AUD">AUD 澳大利亞幣</option>
-          <option value="CNY">CNY 中國人民幣</option>
-          <option value="JPY">JPY 日幣</option>
-          <option value="KRW">KRW 韓幣</option>
-          <option value="AED">AED 杜拜幣</option>
+          <option value="HKD">HKD 港元</option>
+          <option value="AUD">AUD 澳大利亞元</option>
+          <option value="CNY">CNY 人民幣</option>
+          <option value="JPY">JPY 日圓</option>
+          <option value="KRW">KRW 韓元</option>
+          <option value="AED">AED 阿聯酋迪爾汗</option>
         </select>
         <span>→</span>
         <label for="targetCurrency">本幣</label>
         <select id="targetCurrency">
-          <option value="TWD">TWD 新台幣</option>
+          <option value="TWD">TWD 新臺幣</option>
           <option value="USD">USD 美元</option>
           <option value="VND">VND 越南盾</option>
           <option value="KHR">KHR 柬埔寨瑞爾</option>
-          <option value="SGD">SGD 新加坡幣</option>
+          <option value="SGD">SGD 新加坡元</option>
           <option value="MYR">MYR 馬來西亞令吉</option>
-          <option value="HKD">HKD 香港幣</option>
-          <option value="AUD">AUD 澳大利亞幣</option>
-          <option value="CNY">CNY 中國人民幣</option>
-          <option value="JPY">JPY 日幣</option>
-          <option value="KRW">KRW 韓幣</option>
-          <option value="AED">AED 杜拜幣</option>
+          <option value="HKD">HKD 港元</option>
+          <option value="AUD">AUD 澳大利亞元</option>
+          <option value="CNY">CNY 人民幣</option>
+          <option value="JPY">JPY 日圓</option>
+          <option value="KRW">KRW 韓元</option>
+          <option value="AED">AED 阿聯酋迪爾汗</option>
         </select>
       </div>
       <button type="button" onclick="fetchLiveRate()">抓即時匯率</button>
@@ -234,7 +234,7 @@
         <tr>
           <th>#</th>
           <th>外幣金額</th>
-          <th>匯率<br><span style="font-size:11px;">(本幣 / 1單位外幣)</span></th>
+          <th>匯率<br><span style="font-size:11px;">(本幣 / 1 單位外幣)</span></th>
           <th>本幣金額</th>
           <th>刪除</th>
         </tr>
@@ -269,18 +269,4 @@
   </div>
 
   <script>
-    const tableBody = document.getElementById('tableBody');
-    const emptyHint = document.getElementById('emptyHint');
-    const resultCard = document.getElementById('resultCard');
-    const totalForeignEl = document.getElementById('totalForeign');
-    const totalLocalEl = document.getElementById('totalLocal');
-    const avgRateEl = document.getElementById('avgRate');
-
-    const baseCurrencySelect = document.getElementById('baseCurrency');
-    const targetCurrencySelect = document.getElementById('targetCurrency');
-    const liveRateInfo = document.getElementById('liveRateInfo');
-
-    const STORAGE_KEY = 'fxCalcV2';
-
-    // 儲存當前資料到 localStorage
-    function save
+    const tableBo
