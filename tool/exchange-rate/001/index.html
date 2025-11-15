@@ -224,7 +224,7 @@
         </tr>
       </thead>
       <tbody id="tableBody">
-        <!-- JS 會插入列 -->
+        <!-- JS 產生 -->
       </tbody>
     </table>
 
@@ -418,7 +418,38 @@
       localStorage.removeItem(STORAGE_KEY);
     }
 
-    // 用 Frankfurter API 抓即時匯率
+    // ---------- 三層備援匯率 API ----------
+
+    async function getRateFromFrankfurter(from, to) {
+      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Frankfurter 回應錯誤');
+      const data = await res.json();
+      const rate = data.rates[to];
+      if (!rate) throw new Error('Frankfurter 沒有這個幣別');
+      return rate;
+    }
+
+    async function getRateFromOpenER(from, to) {
+      const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(from)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('OpenER 回應錯誤');
+      const data = await res.json();
+      const rate = data.rates && data.rates[to];
+      if (!rate) throw new Error('OpenER 沒有這個幣別');
+      return rate;
+    }
+
+    async function getRateFromExchangeHost(from, to) {
+      const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(from)}&symbols=${encodeURIComponent(to)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('ExchangeRate.host 回應錯誤');
+      const data = await res.json();
+      const rate = data.rates && data.rates[to];
+      if (!rate) throw new Error('ExchangeRate.host 沒有這個幣別');
+      return rate;
+    }
+
     async function fetchLiveRate() {
       const from = baseCurrencySelect.value;
       const to = targetCurrencySelect.value;
@@ -426,43 +457,62 @@
       if (from === to) {
         liveRateInfo.textContent = '外幣與本幣相同，不需要換匯。';
         liveRateInfo.className = 'live-info';
+        saveData();
         return;
       }
 
-      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+      liveRateInfo.textContent = '取得匯率中…';
+      liveRateInfo.className = 'live-info';
+
+      let rate = null;
+      let source = '';
 
       try {
-        liveRateInfo.textContent = '取得匯率中…';
-        liveRateInfo.className = 'live-info';
-
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('API 回應錯誤');
-
-        const data = await res.json();
-        const rate = data.rates[to];
-        if (!rate) throw new Error('找不到對應匯率');
-
-        liveRateInfo.textContent = `最新匯率：1 ${from} ≈ ${rate.toFixed(4)} ${to}（資料來源：Frankfurter / ECB）`;
-        liveRateInfo.className = 'live-info success';
-
-        // 自動把匯率填入「尚未填匯率」的列
-        const rows = tableBody.querySelectorAll('tr');
-        rows.forEach(row => {
-          const inputs = row.querySelectorAll('input[type="number"]');
-          if (!inputs.length) return;
-          const rateInput = inputs[1];
-          if (!rateInput.value) {
-            rateInput.value = rate.toFixed(4);
-            updateRowLocal(rateInput);
+        // 1. 先試 Frankfurter
+        rate = await getRateFromFrankfurter(from, to);
+        source = 'Frankfurter / ECB';
+      } catch (e1) {
+        console.warn('Frankfurter 失敗：', e1);
+        try {
+          // 2. 再試 Open ER API
+          rate = await getRateFromOpenER(from, to);
+          source = 'Open ER API';
+        } catch (e2) {
+          console.warn('OpenER 失敗：', e2);
+          try {
+            // 3. 最後試 ExchangeRate.host
+            rate = await getRateFromExchangeHost(from, to);
+            source = 'ExchangeRate.host';
+          } catch (e3) {
+            console.warn('ExchangeRate.host 也失敗：', e3);
           }
-        });
-
-        saveData();
-      } catch (err) {
-        liveRateInfo.textContent = '取得匯率失敗，稍後再試。';
-        liveRateInfo.className = 'live-info error';
-        console.error(err);
+        }
       }
+
+      if (!rate) {
+        liveRateInfo.textContent = '取得匯率失敗，可能是網路或地區限制，稍後再試。';
+        liveRateInfo.className = 'live-info error';
+        saveData();
+        return;
+      }
+
+      liveRateInfo.textContent =
+        `最新匯率：1 ${from} ≈ ${rate.toFixed(4)} ${to}（來源：${source}）`;
+      liveRateInfo.className = 'live-info success';
+
+      // 自動把匯率填入「尚未填匯率」的列
+      const rows = tableBody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input[type="number"]');
+        if (!inputs.length) return;
+        const rateInput = inputs[1];
+        if (!rateInput.value) {
+          rateInput.value = rate.toFixed(4);
+          updateRowLocal(rateInput);
+        }
+      });
+
+      saveData();
     }
 
     // 初始化
