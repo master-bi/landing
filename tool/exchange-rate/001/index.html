@@ -176,7 +176,7 @@
     }
     @media (max-width: 560px) {
       h1 { font-size: 18px; }
-      th:nth-child(4), td:nth-child(4) { display: none; } /* 小螢幕隱藏「本幣金額」欄 */
+      th:nth-child(4), td:nth-child(4) { display: none; }
       .rate-bar { align-items: flex-start; }
     }
   </style>
@@ -198,6 +198,14 @@
           <option value="TWD">TWD 新台幣</option>
           <option value="VND">VND 越南盾</option>
           <option value="KHR">KHR 柬埔寨瑞爾</option>
+          <option value="SGD">SGD 新加坡幣</option>
+          <option value="MYR">MYR 馬來西亞令吉</option>
+          <option value="HKD">HKD 香港幣</option>
+          <option value="AUD">AUD 澳大利亞幣</option>
+          <option value="CNY">CNY 中國人民幣</option>
+          <option value="JPY">JPY 日幣</option>
+          <option value="KRW">KRW 韓幣</option>
+          <option value="AED">AED 杜拜幣</option>
         </select>
         <span>→</span>
         <label for="targetCurrency">本幣</label>
@@ -206,6 +214,14 @@
           <option value="USD">USD 美元</option>
           <option value="VND">VND 越南盾</option>
           <option value="KHR">KHR 柬埔寨瑞爾</option>
+          <option value="SGD">SGD 新加坡幣</option>
+          <option value="MYR">MYR 馬來西亞令吉</option>
+          <option value="HKD">HKD 香港幣</option>
+          <option value="AUD">AUD 澳大利亞幣</option>
+          <option value="CNY">CNY 中國人民幣</option>
+          <option value="JPY">JPY 日幣</option>
+          <option value="KRW">KRW 韓幣</option>
+          <option value="AED">AED 杜拜幣</option>
         </select>
       </div>
       <button type="button" onclick="fetchLiveRate()">抓即時匯率</button>
@@ -267,256 +283,4 @@
     const STORAGE_KEY = 'fxCalcV2';
 
     // 儲存當前資料到 localStorage
-    function saveData() {
-      const rows = tableBody.querySelectorAll('tr');
-      const rowData = [];
-
-      rows.forEach(row => {
-        const inputs = row.querySelectorAll('input[type="number"]');
-        if (!inputs.length) return;
-        rowData.push({
-          foreign: inputs[0].value || "",
-          rate: inputs[1].value || ""
-        });
-      });
-
-      const payload = {
-        rows: rowData,
-        base: baseCurrencySelect.value,
-        target: targetCurrencySelect.value,
-        liveText: liveRateInfo.textContent
-      };
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    }
-
-    // 從 localStorage 載入
-    function loadData() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (!saved) {
-        addRow();
-        return;
-      }
-
-      let payload;
-      try {
-        payload = JSON.parse(saved);
-      } catch (e) {
-        addRow();
-        return;
-      }
-
-      if (payload.base) baseCurrencySelect.value = payload.base;
-      if (payload.target) targetCurrencySelect.value = payload.target;
-      if (payload.liveText) liveRateInfo.textContent = payload.liveText;
-
-      if (payload.rows && Array.isArray(payload.rows) && payload.rows.length) {
-        payload.rows.forEach(item => {
-          addRow(item.foreign, item.rate);
-        });
-        emptyHint.style.display = 'none';
-      } else {
-        addRow();
-      }
-    }
-
-    function renumberRows() {
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach((row, index) => {
-        const firstCell = row.querySelector('td');
-        if (firstCell) firstCell.textContent = index + 1;
-      });
-    }
-
-    function addRow(defaultForeign = '', defaultRate = '') {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td></td>
-        <td>
-          <input type="number" step="0.0001" min="0" value="${defaultForeign}"
-            oninput="updateRowLocal(this); saveData();" />
-        </td>
-        <td>
-          <input type="number" step="0.0001" min="0" value="${defaultRate}"
-            oninput="updateRowLocal(this); saveData();" />
-        </td>
-        <td class="localCell">-</td>
-        <td>
-          <button type="button" class="danger" onclick="deleteRow(this)">X</button>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-      emptyHint.style.display = 'none';
-      renumberRows();
-      const firstInput = tr.querySelector('input[type="number"]');
-      if (firstInput) updateRowLocal(firstInput);
-    }
-
-    function deleteRow(btn) {
-      const row = btn.closest('tr');
-      row.remove();
-      renumberRows();
-      saveData();
-
-      if (!tableBody.children.length) {
-        emptyHint.style.display = 'block';
-        resultCard.style.display = 'none';
-      }
-    }
-
-    function updateRowLocal(inputEl) {
-      const row = inputEl.closest('tr');
-      const inputs = row.querySelectorAll('input[type="number"]');
-      const foreign = parseFloat(inputs[0].value) || 0;
-      const rate = parseFloat(inputs[1].value) || 0;
-      const localCell = row.querySelector('.localCell');
-
-      if (foreign > 0 && rate > 0) {
-        const localAmount = foreign * rate;
-        localCell.textContent = localAmount.toFixed(2);
-      } else {
-        localCell.textContent = '-';
-      }
-    }
-
-    function calculate() {
-      let totalForeign = 0;
-      let totalLocal = 0;
-
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const inputs = row.querySelectorAll('input[type="number"]');
-        if (!inputs.length) return;
-        const foreign = parseFloat(inputs[0].value);
-        const rate = parseFloat(inputs[1].value);
-
-        if (!isNaN(foreign) && !isNaN(rate) && foreign > 0 && rate > 0) {
-          totalForeign += foreign;
-          totalLocal += foreign * rate;
-        }
-      });
-
-      if (totalForeign === 0 || totalLocal === 0) {
-        alert('請至少輸入一筆有效的「外幣金額」與「匯率」。');
-        return;
-      }
-
-      const avgRate = totalLocal / totalForeign;
-
-      totalForeignEl.textContent = totalForeign.toFixed(4);
-      totalLocalEl.textContent = totalLocal.toFixed(2);
-      avgRateEl.textContent = avgRate.toFixed(4);
-      resultCard.style.display = 'block';
-
-      saveData();
-    }
-
-    function clearAll() {
-      tableBody.innerHTML = '';
-      emptyHint.style.display = 'block';
-      resultCard.style.display = 'none';
-      localStorage.removeItem(STORAGE_KEY);
-    }
-
-    // ---------- 三層備援匯率 API ----------
-
-    async function getRateFromFrankfurter(from, to) {
-      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Frankfurter 回應錯誤');
-      const data = await res.json();
-      const rate = data.rates[to];
-      if (!rate) throw new Error('Frankfurter 沒有這個幣別');
-      return rate;
-    }
-
-    async function getRateFromOpenER(from, to) {
-      const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(from)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('OpenER 回應錯誤');
-      const data = await res.json();
-      const rate = data.rates && data.rates[to];
-      if (!rate) throw new Error('OpenER 沒有這個幣別');
-      return rate;
-    }
-
-    async function getRateFromExchangeHost(from, to) {
-      const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(from)}&symbols=${encodeURIComponent(to)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('ExchangeRate.host 回應錯誤');
-      const data = await res.json();
-      const rate = data.rates && data.rates[to];
-      if (!rate) throw new Error('ExchangeRate.host 沒有這個幣別');
-      return rate;
-    }
-
-    async function fetchLiveRate() {
-      const from = baseCurrencySelect.value;
-      const to = targetCurrencySelect.value;
-
-      if (from === to) {
-        liveRateInfo.textContent = '外幣與本幣相同，不需要換匯。';
-        liveRateInfo.className = 'live-info';
-        saveData();
-        return;
-      }
-
-      liveRateInfo.textContent = '取得匯率中…';
-      liveRateInfo.className = 'live-info';
-
-      let rate = null;
-      let source = '';
-
-      try {
-        // 1. 先試 Frankfurter
-        rate = await getRateFromFrankfurter(from, to);
-        source = 'Frankfurter / ECB';
-      } catch (e1) {
-        console.warn('Frankfurter 失敗：', e1);
-        try {
-          // 2. 再試 Open ER API
-          rate = await getRateFromOpenER(from, to);
-          source = 'Open ER API';
-        } catch (e2) {
-          console.warn('OpenER 失敗：', e2);
-          try {
-            // 3. 最後試 ExchangeRate.host
-            rate = await getRateFromExchangeHost(from, to);
-            source = 'ExchangeRate.host';
-          } catch (e3) {
-            console.warn('ExchangeRate.host 也失敗：', e3);
-          }
-        }
-      }
-
-      if (!rate) {
-        liveRateInfo.textContent = '取得匯率失敗，可能是網路或地區限制，稍後再試。';
-        liveRateInfo.className = 'live-info error';
-        saveData();
-        return;
-      }
-
-      liveRateInfo.textContent =
-        `最新匯率：1 ${from} ≈ ${rate.toFixed(4)} ${to}（來源：${source}）`;
-      liveRateInfo.className = 'live-info success';
-
-      // 自動把匯率填入「尚未填匯率」的列
-      const rows = tableBody.querySelectorAll('tr');
-      rows.forEach(row => {
-        const inputs = row.querySelectorAll('input[type="number"]');
-        if (!inputs.length) return;
-        const rateInput = inputs[1];
-        if (!rateInput.value) {
-          rateInput.value = rate.toFixed(4);
-          updateRowLocal(rateInput);
-        }
-      });
-
-      saveData();
-    }
-
-    // 初始化
-    window.addEventListener('DOMContentLoaded', loadData);
-  </script>
-</body>
-</html>
+    function save
