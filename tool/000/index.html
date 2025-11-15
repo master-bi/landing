@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>綜合匯率計算機</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 640px;
+      background: #020617;
+      border-radius: 16px;
+      padding: 20px 24px 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 1px solid #1f2937;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+    }
+    .desc {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    th, td {
+      padding: 6px 4px;
+      text-align: center;
+    }
+    th {
+      color: #9ca3af;
+      font-weight: 500;
+      border-bottom: 1px solid #1f2937;
+    }
+    tr:nth-child(even) td {
+      background: rgba(15,23,42,0.7);
+    }
+    input[type="number"] {
+      width: 95%;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 1px rgba(96,165,250,0.4);
+    }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #1d4ed8;
+      color: white;
+    }
+    button.secondary {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    button.danger {
+      background: #b91c1c;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    .result-card {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-size: 14px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .result-label {
+      color: #9ca3af;
+    }
+    .result-value {
+      font-weight: 600;
+    }
+    .empty {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      padding: 12px 0;
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 18px; }
+      th:nth-child(4), td:nth-child(4) { display: none; } /* 小螢幕隱藏「本幣金額」欄 */
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>綜合匯率計算機</h1>
+    <div class="desc">
+      輸入每一筆「外幣金額」與「匯率（本幣 / 外幣）」，
+      系統會幫你算出平均換匯成本（綜合匯率）。
+    </div>
+
+    <table id="rateTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>外幣金額</th>
+          <th>匯率<br><span style="font-size:11px;">(本幣 / 1單位外幣)</span></th>
+          <th>本幣金額</th>
+          <th>刪除</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <!-- JS 會插入列 -->
+      </tbody>
+    </table>
+
+    <div class="empty" id="emptyHint">請先新增一筆資料</div>
+
+    <div class="btn-row">
+      <button type="button" onclick="addRow()">＋ 新增一筆</button>
+      <button type="button" class="secondary" onclick="calculate()">計算綜合匯率</button>
+      <button type="button" class="danger" onclick="clearAll()">全部清除</button>
+    </div>
+
+    <div class="result-card" id="resultCard" style="display:none;">
+      <div class="result-row">
+        <span class="result-label">總外幣金額：</span>
+        <span class="result-value" id="totalForeign">-</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">總本幣金額：</span>
+        <span class="result-value" id="totalLocal">-</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">綜合匯率（本幣 / 外幣）：</span>
+        <span class="result-value" id="avgRate">-</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tableBody = document.getElementById('tableBody');
+    const emptyHint = document.getElementById('emptyHint');
+    const resultCard = document.getElementById('resultCard');
+    const totalForeignEl = document.getElementById('totalForeign');
+    const totalLocalEl = document.getElementById('totalLocal');
+    const avgRateEl = document.getElementById('avgRate');
+
+    let rowCount = 0;
+
+    function addRow(defaultForeign = '', defaultRate = '') {
+      rowCount++;
+      emptyHint.style.display = 'none';
+
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>${rowCount}</td>
+        <td>
+          <input type="number" step="0.0001" min="0" value="${defaultForeign}" oninput="updateRowLocal(this)" />
+        </td>
+        <td>
+          <input type="number" step="0.0001" min="0" value="${defaultRate}" oninput="updateRowLocal(this)" />
+        </td>
+        <td class="localCell">-</td>
+        <td>
+          <button type="button" class="danger" onclick="deleteRow(this)">X</button>
+        </td>
+      `;
+
+      tableBody.appendChild(tr);
+    }
+
+    function deleteRow(btn) {
+      const row = btn.closest('tr');
+      row.remove();
+      if (!tableBody.children.length) {
+        emptyHint.style.display = 'block';
+        resultCard.style.display = 'none';
+        rowCount = 0;
+      }
+    }
+
+    function updateRowLocal(inputEl) {
+      const row = inputEl.closest('tr');
+      const inputs = row.querySelectorAll('input[type="number"]');
+      const foreign = parseFloat(inputs[0].value) || 0;
+      const rate = parseFloat(inputs[1].value) || 0;
+      const localCell = row.querySelector('.localCell');
+
+      if (foreign > 0 && rate > 0) {
+        const localAmount = foreign * rate;
+        localCell.textContent = localAmount.toFixed(2);
+      } else {
+        localCell.textContent = '-';
+      }
+    }
+
+    function calculate() {
+      let totalForeign = 0;
+      let totalLocal = 0;
+
+      const rows = tableBody.querySelectorAll('tr');
+      rows.forEach(row => {
+        const inputs = row.querySelectorAll('input[type="number"]');
+        const foreign = parseFloat(inputs[0].value);
+        const rate = parseFloat(inputs[1].value);
+
+        if (!isNaN(foreign) && !isNaN(rate) && foreign > 0 && rate > 0) {
+          totalForeign += foreign;
+          totalLocal += foreign * rate;
+        }
+      });
+
+      if (totalForeign === 0 || totalLocal === 0) {
+        alert('請至少輸入一筆有效的「外幣金額」與「匯率」。');
+        return;
+      }
+
+      const avgRate = totalLocal / totalForeign;
+
+      totalForeignEl.textContent = totalForeign.toFixed(4);
+      totalLocalEl.textContent = totalLocal.toFixed(2);
+      avgRateEl.textContent = avgRate.toFixed(4);
+      resultCard.style.display = 'block';
+    }
+
+    function clearAll() {
+      tableBody.innerHTML = '';
+      emptyHint.style.display = 'block';
+      resultCard.style.display = 'none';
+      rowCount = 0;
+    }
+
+    // 預設先給一行
+    addRow();
+  </script>
+</body>
+</html>
